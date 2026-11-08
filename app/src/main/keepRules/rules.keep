@@ -1,12 +1,18 @@
-# Add project specific R8 rules here.
-# AGP will combine all keep rule files in src/main/keepRules to pass to R8
-#
-# For more details, see
-#   https://d.android.com/r/tools/r8/keep-rules
+# Project specific R8 / ProGuard rules
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# 保留 androidx.startup 与生命周期初始化器
+-keep class androidx.startup.** { *; }
+-keep class androidx.lifecycle.ProcessLifecycleInitializer { *; }
+
+# 保留 ViewModel 构造函数
+-keepclassmembers class * extends androidx.lifecycle.ViewModel {
+    <init>(...);
+}
+-keepclassmembers class * extends androidx.lifecycle.AndroidViewModel {
+    <init>(android.app.Application);
+}
+
+# 保留应用内的组件、TileService 及数据模型
+-keep class com.github.wdsword07.wearmonitor.data.model.** { *; }
+-keep class com.github.wdsword07.wearmonitor.tile.** { *; }
+-keep class com.github.wdsword07.wearmonitor.presentation.** { *; }
