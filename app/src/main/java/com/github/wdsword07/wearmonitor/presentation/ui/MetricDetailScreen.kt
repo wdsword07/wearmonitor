@@ -96,7 +96,7 @@ fun MetricDetailScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text("设备型号", style = MaterialTheme.typography.bodySmall)
-                                    Text("${device.manufacturer} ${device.model}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                    Text(device.model.ifBlank { "未知" }, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
                                 }
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(top = 2.dp),

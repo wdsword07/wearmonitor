@@ -75,6 +75,19 @@ wearmonitor/
 * 优化了 `/proc/stat` 读取解析（兼容多空格分隔与 SELinux 权限保护），引入 `/proc/loadavg` 智能兜底；
 * 在 `LinearProgressIndicator` 增加 `0.02f` 的最小可视宽度，消除极低负载下圆角裁切盲区导致的“broken”空条假象。
 
+### 3.5 【重要】持久化 su 会话的两大致命陷阱（曾导致全量指标归零）
+1. **token 与无换行文件内容粘连 → 永久阻塞**
+   * `/sys/fs/selinux/enforce`、`/sys/block/zram0/mm_stat`、`thermal_zone*/temp` 等 sysfs 文件**末尾没有换行符**；
+   * 旧实现 `cat file; echo $TOKEN` 实际输出 `1__END__...`（同一行），而读取端用 `line == token` 精确比较，永远匹配不到 → `readLine()` 无限阻塞 → 快照 Flow 卡死 → 全部卡片显示 0；
+   * 修复：命令改为 `...; echo; echo $token`（先补一个换行），读取端再用 `endsWith(token)` 做双保险。
+2. **在持久化 su shell 内嵌套执行 `su`（如 `su -v`）→ 抢占 stdin**
+   * 子 `su` 会继承父 shell 的 stdin（即 App 写入命令的管道），把后续命令读走，token 永不回显；
+   * 修复：**禁止嵌套 su**，Root 管理器识别改用 `magisk -v` / `ksud -V` / `apd -V`；同时所有命令强制 `</dev/null`。
+3. **必须同时具备硬超时兜底**：阻塞式 `readLine()` 无法被协程取消，故放入独立线程 + `Future.get(timeout)`，超时即销毁 su 会话释放 fd，并让调用方降级为 null。
+4. **静态系统信息不得阻塞数据流**：`SystemInfoMonitor` 改为后台协程探测 + 立即返回缓存，首屏指标永不被 root 探测拖慢。
+
+> 另外注意：`pm uninstall` 重装后 UID 会变化（如 10186 → 10187），Magisk 的 root 授权按 UID 记录，会因此变成 `NO ROOT`，需要在 Magisk 中重新授权。
+
 ---
 
 ## 4. 完整 Git 提交记录一览
