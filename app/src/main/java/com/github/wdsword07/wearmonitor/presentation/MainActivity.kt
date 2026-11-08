@@ -2,8 +2,10 @@ package com.github.wdsword07.wearmonitor.presentation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +27,7 @@ import com.github.wdsword07.wearmonitor.data.model.BatteryInfo
 import com.github.wdsword07.wearmonitor.data.model.CpuCoreInfo
 import com.github.wdsword07.wearmonitor.data.model.CpuInfo
 import com.github.wdsword07.wearmonitor.data.model.MemoryInfo
+import com.github.wdsword07.wearmonitor.data.model.MetricDetailType
 import com.github.wdsword07.wearmonitor.data.model.StorageInfo
 import com.github.wdsword07.wearmonitor.data.model.SystemSnapshot
 import com.github.wdsword07.wearmonitor.data.model.ThermalInfo
@@ -32,6 +35,7 @@ import com.github.wdsword07.wearmonitor.presentation.theme.WearmonitorTheme
 import com.github.wdsword07.wearmonitor.presentation.ui.BatteryCard
 import com.github.wdsword07.wearmonitor.presentation.ui.CpuCard
 import com.github.wdsword07.wearmonitor.presentation.ui.MemoryStorageCard
+import com.github.wdsword07.wearmonitor.presentation.ui.MetricDetailScreen
 import com.github.wdsword07.wearmonitor.presentation.ui.StatusHeaderCard
 import com.github.wdsword07.wearmonitor.presentation.ui.ThermalCard
 
@@ -42,8 +46,20 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val snapshot by viewModel.snapshotState.collectAsStateWithLifecycle()
+            val history by viewModel.history.collectAsStateWithLifecycle()
+            val currentDetailType by viewModel.currentDetailType.collectAsStateWithLifecycle()
+
+            // 拦截系统返回键，如果在二级页面则返回主面板
+            BackHandler(enabled = currentDetailType != null) {
+                viewModel.closeDetail()
+            }
+
             WearmonitorApp(
                 snapshot = snapshot,
+                history = history,
+                detailType = currentDetailType,
+                onOpenDetail = { type -> viewModel.openDetail(type) },
+                onBack = { viewModel.closeDetail() },
                 onScrollInProgressChanged = { isScrolling ->
                     viewModel.setScrolling(isScrolling)
                 }
@@ -55,68 +71,89 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun WearmonitorApp(
     snapshot: SystemSnapshot,
+    history: List<SystemSnapshot> = emptyList(),
+    detailType: MetricDetailType? = null,
+    onOpenDetail: (MetricDetailType) -> Unit = {},
+    onBack: () -> Unit = {},
     onScrollInProgressChanged: (Boolean) -> Unit = {}
 ) {
     WearmonitorTheme {
         AppScaffold {
-            val listState = rememberTransformingLazyColumnState()
+            Crossfade(
+                targetState = detailType,
+                label = "navigation_crossfade"
+            ) { type ->
+                if (type != null) {
+                    MetricDetailScreen(
+                        type = type,
+                        history = history,
+                        latest = snapshot,
+                        onBack = onBack
+                    )
+                } else {
+                    val listState = rememberTransformingLazyColumnState()
 
-            // 监听列表滚动状态，在用户滑动时平息数据刷新，消除掉帧
-            LaunchedEffect(listState) {
-                snapshotFlow { listState.isScrollInProgress }
-                    .collect { isScrolling ->
-                        onScrollInProgressChanged(isScrolling)
-                    }
-            }
-
-            ScreenScaffold(
-                scrollState = listState
-            ) { contentPadding ->
-                TransformingLazyColumn(
-                    contentPadding = PaddingValues(
-                        top = contentPadding.calculateTopPadding() + 8.dp,
-                        bottom = contentPadding.calculateBottomPadding() + 16.dp,
-                        start = 10.dp,
-                        end = 10.dp
-                    ),
-                    state = listState,
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    item(key = "header") {
-                        StatusHeaderCard(
-                            isRootGranted = snapshot.isRootGranted,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                    LaunchedEffect(listState) {
+                        snapshotFlow { listState.isScrollInProgress }
+                            .collect { isScrolling ->
+                                onScrollInProgressChanged(isScrolling)
+                            }
                     }
 
-                    item(key = "cpu") {
-                        CpuCard(
-                            cpu = snapshot.cpu,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+                    ScreenScaffold(
+                        scrollState = listState
+                    ) { contentPadding ->
+                        TransformingLazyColumn(
+                            contentPadding = PaddingValues(
+                                top = contentPadding.calculateTopPadding() + 8.dp,
+                                bottom = contentPadding.calculateBottomPadding() + 16.dp,
+                                start = 10.dp,
+                                end = 10.dp
+                            ),
+                            state = listState,
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            item(key = "header") {
+                                StatusHeaderCard(
+                                    isRootGranted = snapshot.isRootGranted,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
 
-                    item(key = "thermal") {
-                        ThermalCard(
-                            thermal = snapshot.thermal,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+                            item(key = "cpu") {
+                                CpuCard(
+                                    cpu = snapshot.cpu,
+                                    onClick = { onOpenDetail(MetricDetailType.CPU) },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
 
-                    item(key = "battery") {
-                        BatteryCard(
-                            battery = snapshot.battery,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
+                            item(key = "thermal") {
+                                ThermalCard(
+                                    thermal = snapshot.thermal,
+                                    onClick = { onOpenDetail(MetricDetailType.THERMAL) },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
 
-                    item(key = "memory") {
-                        MemoryStorageCard(
-                            memory = snapshot.memory,
-                            storage = snapshot.storage,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                            item(key = "battery") {
+                                BatteryCard(
+                                    battery = snapshot.battery,
+                                    onClick = { onOpenDetail(MetricDetailType.BATTERY) },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+
+                            item(key = "memory") {
+                                MemoryStorageCard(
+                                    memory = snapshot.memory,
+                                    storage = snapshot.storage,
+                                    onMemoryClick = { onOpenDetail(MetricDetailType.MEMORY) },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
                     }
                 }
             }

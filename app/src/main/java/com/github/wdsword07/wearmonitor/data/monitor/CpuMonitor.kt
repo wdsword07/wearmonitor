@@ -10,6 +10,7 @@ import java.io.File
 class CpuMonitor {
     private var lastTotalTime = 0L
     private var lastIdleTime = 0L
+    private var lastValidUsage = 15f // 初始默认预估基准
 
     @Volatile
     private var detectedCoreIndices: List<Int>? = null
@@ -30,42 +31,61 @@ class CpuMonitor {
     }
 
     private suspend fun calculateOverallUsage(): Float {
-        val statContent = RootShell.readFile("/proc/stat") ?: return 0f
-        val firstLine = statContent.lineSequence().firstOrNull { it.startsWith("cpu ") } ?: return 0f
-        val parts = firstLine.trim().split("\\s+".toRegex())
-        if (parts.size < 5) return 0f
+        val statContent = RootShell.readFile("/proc/stat")
+        if (statContent != null) {
+            val firstLine = statContent.lineSequence().firstOrNull { it.trim().startsWith("cpu") }
+            if (firstLine != null) {
+                val parts = firstLine.trim().split("\\s+".toRegex())
+                if (parts.size >= 5) {
+                    try {
+                        val user = parts[1].toLong()
+                        val nice = parts[2].toLong()
+                        val system = parts[3].toLong()
+                        val idle = parts[4].toLong()
+                        val iowait = parts.getOrNull(5)?.toLongOrNull() ?: 0L
+                        val irq = parts.getOrNull(6)?.toLongOrNull() ?: 0L
+                        val softirq = parts.getOrNull(7)?.toLongOrNull() ?: 0L
+                        val steal = parts.getOrNull(8)?.toLongOrNull() ?: 0L
 
-        try {
-            val user = parts[1].toLong()
-            val nice = parts[2].toLong()
-            val system = parts[3].toLong()
-            val idle = parts[4].toLong()
-            val iowait = parts.getOrNull(5)?.toLongOrNull() ?: 0L
-            val irq = parts.getOrNull(6)?.toLongOrNull() ?: 0L
-            val softirq = parts.getOrNull(7)?.toLongOrNull() ?: 0L
-            val steal = parts.getOrNull(8)?.toLongOrNull() ?: 0L
+                        val currentIdleTime = idle + iowait
+                        val currentTotalTime = user + nice + system + currentIdleTime + irq + softirq + steal
 
-            val currentIdleTime = idle + iowait
-            val currentTotalTime = user + nice + system + currentIdleTime + irq + softirq + steal
+                        if (lastTotalTime == 0L) {
+                            lastTotalTime = currentTotalTime
+                            lastIdleTime = currentIdleTime
+                            return lastValidUsage
+                        }
 
-            if (lastTotalTime == 0L) {
-                lastTotalTime = currentTotalTime
-                lastIdleTime = currentIdleTime
-                return 0f
+                        val deltaTotal = currentTotalTime - lastTotalTime
+                        val deltaIdle = currentIdleTime - lastIdleTime
+
+                        lastTotalTime = currentTotalTime
+                        lastIdleTime = currentIdleTime
+
+                        if (deltaTotal > 0) {
+                            val usage = ((deltaTotal - deltaIdle).toFloat() / deltaTotal.toFloat()) * 100f
+                            val clamped = usage.coerceIn(0f, 100f)
+                            lastValidUsage = clamped
+                            return clamped
+                        }
+                    } catch (_: Exception) {}
+                }
             }
-
-            val deltaTotal = currentTotalTime - lastTotalTime
-            val deltaIdle = currentIdleTime - lastIdleTime
-
-            lastTotalTime = currentTotalTime
-            lastIdleTime = currentIdleTime
-
-            if (deltaTotal <= 0) return 0f
-            val usage = ((deltaTotal - deltaIdle).toFloat() / deltaTotal.toFloat()) * 100f
-            return usage.coerceIn(0f, 100f)
-        } catch (_: Exception) {
-            return 0f
         }
+
+        // 兜底方案：读取 /proc/loadavg 获取 1 分钟系统负载
+        val loadavg = RootShell.readFile("/proc/loadavg", singleLineOnly = true)
+        if (loadavg != null) {
+            val oneMinLoad = loadavg.split("\\s+".toRegex()).firstOrNull()?.toFloatOrNull()
+            if (oneMinLoad != null) {
+                val coreCount = (detectedCoreIndices?.size ?: Runtime.getRuntime().availableProcessors()).coerceAtLeast(1)
+                val loadPercent = (oneMinLoad / coreCount.toFloat() * 100f).coerceIn(0f, 100f)
+                lastValidUsage = loadPercent
+                return loadPercent
+            }
+        }
+
+        return lastValidUsage
     }
 
     private suspend fun readCoresInfo(): List<CpuCoreInfo> {
@@ -101,7 +121,7 @@ class CpuMonitor {
         val isOnline = if (index == 0) {
             true
         } else {
-            val onlineStr = RootShell.readFile("$basePath/online")
+            val onlineStr = RootShell.readFile("$basePath/online", singleLineOnly = true)
             onlineStr == null || onlineStr == "1"
         }
 
@@ -113,8 +133,8 @@ class CpuMonitor {
             )
         }
 
-        val curFreqStr = RootShell.readFile("$basePath/cpufreq/scaling_cur_freq")
-            ?: RootShell.readFile("$basePath/cpufreq/cpuinfo_cur_freq")
+        val curFreqStr = RootShell.readFile("$basePath/cpufreq/scaling_cur_freq", singleLineOnly = true)
+            ?: RootShell.readFile("$basePath/cpufreq/cpuinfo_cur_freq", singleLineOnly = true)
 
         val curFreqKhz = curFreqStr?.toIntOrNull() ?: 0
 
@@ -126,6 +146,6 @@ class CpuMonitor {
     }
 
     private suspend fun readGovernor(): String {
-        return RootShell.readFile("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor") ?: ""
+        return RootShell.readFile("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor", singleLineOnly = true) ?: ""
     }
 }

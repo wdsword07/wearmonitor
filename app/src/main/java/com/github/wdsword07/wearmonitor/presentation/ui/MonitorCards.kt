@@ -66,10 +66,11 @@ fun StatusHeaderCard(
 @Composable
 fun CpuCard(
     cpu: CpuInfo,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
-        onClick = {},
+        onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -81,11 +82,18 @@ fun CpuCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "CPU 负载",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "CPU 负载",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "  ›",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
                 Text(
                     text = String.format(Locale.US, "%.1f%%", cpu.overallUsagePercent),
                     style = MaterialTheme.typography.labelMedium,
@@ -95,8 +103,14 @@ fun CpuCard(
             }
 
             Spacer(modifier = Modifier.height(4.dp))
+            // 确保即使负载低也有微弱的可视最小进度，且正确响应 0f..1f
+            val cpuProgress = if (cpu.overallUsagePercent > 0f) {
+                (cpu.overallUsagePercent / 100f).coerceIn(0.02f, 1f)
+            } else {
+                0.02f
+            }
             LinearProgressIndicator(
-                progress = { (cpu.overallUsagePercent / 100f).coerceIn(0f, 1f) },
+                progress = { cpuProgress },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -136,21 +150,35 @@ fun CpuCard(
 @Composable
 fun ThermalCard(
     thermal: ThermalInfo,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
-        onClick = {},
+        onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         )
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp)) {
-            Text(
-                text = "温度状态",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "温度状态",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "  ›",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(4.dp))
             Row(
@@ -194,10 +222,11 @@ fun ThermalCard(
 @Composable
 fun BatteryCard(
     battery: BatteryInfo,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
-        onClick = {},
+        onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -209,11 +238,18 @@ fun BatteryCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "电池与供电",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "电池与供电",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "  ›",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
                 Text(
                     text = "${battery.levelPercent}%" + if (battery.isCharging) " ⚡" else "",
                     style = MaterialTheme.typography.labelMedium,
@@ -224,7 +260,7 @@ fun BatteryCard(
 
             Spacer(modifier = Modifier.height(4.dp))
             LinearProgressIndicator(
-                progress = { (battery.levelPercent / 100f).coerceIn(0f, 1f) },
+                progress = { (battery.levelPercent / 100f).coerceIn(0.02f, 1f) },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -268,21 +304,35 @@ fun BatteryCard(
 fun MemoryStorageCard(
     memory: MemoryInfo,
     storage: StorageInfo,
+    onMemoryClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
-        onClick = {},
+        onClick = onMemoryClick,
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         )
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp)) {
-            Text(
-                text = "内存与存储",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "内存与存储",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "  ›",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(4.dp))
             Row(
@@ -302,7 +352,7 @@ fun MemoryStorageCard(
                 )
             }
             LinearProgressIndicator(
-                progress = { (memory.usedPercent / 100f).coerceIn(0f, 1f) },
+                progress = { (memory.usedPercent / 100f).coerceIn(0.02f, 1f) },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -337,7 +387,7 @@ fun MemoryStorageCard(
                     )
                 }
                 LinearProgressIndicator(
-                    progress = { (storage.usedPercent / 100f).coerceIn(0f, 1f) },
+                    progress = { (storage.usedPercent / 100f).coerceIn(0.02f, 1f) },
                     modifier = Modifier.fillMaxWidth()
                 )
             }

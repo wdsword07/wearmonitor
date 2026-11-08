@@ -50,6 +50,13 @@ data class StorageInfo(
     val usedPercent: Float
 )
 
+enum class MetricDetailType(val title: String) {
+    CPU("CPU 趋势"),
+    THERMAL("温度趋势"),
+    BATTERY("供电趋势"),
+    MEMORY("内存趋势")
+}
+
 data class SystemSnapshot(
     val timestamp: Long = System.currentTimeMillis(),
     val isRootGranted: Boolean = false,

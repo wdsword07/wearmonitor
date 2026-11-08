@@ -19,10 +19,9 @@ object RootShell {
     @Volatile
     private var rootAvailable: Boolean? = null
 
-    // 记录不可读/不存在的路径，避免在低功耗手表上高频轮询重试造成 CPU 负载
-    private val unreadablePaths = ConcurrentHashMap<String, Long>()
+    // 仅针对非关键的可选 sysfs 节点记录不存在的黑名单，核心 proc 节点绝不加入长期黑名单
+    private val unreadableSysfsPaths = ConcurrentHashMap<String, Long>()
 
-    // 持久化 su 进程与管道
     private var persistentSuProcess: Process? = null
     private var suWriter: OutputStreamWriter? = null
     private var suReader: BufferedReader? = null
@@ -50,40 +49,46 @@ object RootShell {
     }
 
     /**
-     * 高性能读取小文本文件：
-     * 1. 优先普通文件 IO 直接读取（微秒级、零进程开销）
-     * 2. 若普通权限失败且设备有 Root，使用持久化 su 会话，避免反复 fork 进程引起严重掉帧
+     * 高性能读取文本文件内容：
+     * 1. 优先普通文件 IO 直接读取（微秒级）
+     * 2. 若普通权限失败且设备有 Root，使用持久化 su 会话
      */
-    suspend fun readFile(path: String): String? = withContext(Dispatchers.IO) {
+    suspend fun readFile(path: String, singleLineOnly: Boolean = false): String? = withContext(Dispatchers.IO) {
         val now = System.currentTimeMillis()
-        val lastFailed = unreadablePaths[path]
-        if (lastFailed != null && (now - lastFailed < 60_000L)) {
-            // 60秒内曾失败过的路径直接跳过，保护 CPU 性能
-            return@withContext null
+        if (path.startsWith("/sys/")) {
+            val lastFailed = unreadableSysfsPaths[path]
+            if (lastFailed != null && (now - lastFailed < 45_000L)) {
+                return@withContext null
+            }
         }
 
         // 尝试普通 Java IO
         try {
             val file = File(path)
             if (file.exists() && file.canRead()) {
-                FileInputStream(file).bufferedReader().use {
-                    val line = it.readLine()?.trim()
-                    if (line != null) return@withContext line
+                FileInputStream(file).bufferedReader().use { reader ->
+                    return@withContext if (singleLineOnly) {
+                        reader.readLine()?.trim()
+                    } else {
+                        reader.readText().trim()
+                    }
                 }
             }
         } catch (_: Exception) {
-            // 普通权限无法读取
+            // 普通权限被拒绝，继续尝试 root
         }
 
-        // 仅在确认有 Root 权限时才通过 root 会话读取
+        // 尝试 Root 读取
         if (isRootAvailable()) {
             val result = readViaRootSession(path)
             if (result != null) {
-                return@withContext result
+                return@withContext if (singleLineOnly) result.lineSequence().firstOrNull()?.trim() else result
             }
         }
 
-        unreadablePaths[path] = now
+        if (path.startsWith("/sys/")) {
+            unreadableSysfsPaths[path] = now
+        }
         null
     }
 
