@@ -1,106 +1,128 @@
-/* While this template provides a good starting point for using Wear Compose, you can always
- * take a look at https://github.com/android/wear-os-samples/tree/main/ComposeStarter to find the
- * most up to date changes to the libraries and their usages.
- */
-
 package com.github.wdsword07.wearmonitor.presentation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.AppScaffold
-import androidx.wear.compose.material3.Button
-import androidx.wear.compose.material3.ButtonDefaults
-import androidx.wear.compose.material3.EdgeButton
-import androidx.wear.compose.material3.ListHeader
-import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ScreenScaffold
-import androidx.wear.compose.material3.SurfaceTransformation
-import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import androidx.wear.compose.ui.tooling.preview.WearPreviewFontScales
-import com.github.wdsword07.wearmonitor.R
+import com.github.wdsword07.wearmonitor.data.model.BatteryInfo
+import com.github.wdsword07.wearmonitor.data.model.CpuCoreInfo
+import com.github.wdsword07.wearmonitor.data.model.CpuInfo
+import com.github.wdsword07.wearmonitor.data.model.MemoryInfo
+import com.github.wdsword07.wearmonitor.data.model.StorageInfo
+import com.github.wdsword07.wearmonitor.data.model.SystemSnapshot
+import com.github.wdsword07.wearmonitor.data.model.ThermalInfo
 import com.github.wdsword07.wearmonitor.presentation.theme.WearmonitorTheme
+import com.github.wdsword07.wearmonitor.presentation.ui.BatteryCard
+import com.github.wdsword07.wearmonitor.presentation.ui.CpuCard
+import com.github.wdsword07.wearmonitor.presentation.ui.MemoryStorageCard
+import com.github.wdsword07.wearmonitor.presentation.ui.StatusHeaderCard
+import com.github.wdsword07.wearmonitor.presentation.ui.ThermalCard
 
 class MainActivity : ComponentActivity() {
+    private val viewModel: SystemMonitorViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            WearApp("Android")
+            val snapshot by viewModel.snapshotState.collectAsStateWithLifecycle()
+            WearmonitorApp(snapshot = snapshot)
         }
     }
 }
 
 @Composable
-fun WearApp(greetingName: String) {
+fun WearmonitorApp(snapshot: SystemSnapshot) {
     WearmonitorTheme {
         AppScaffold {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
+
             ScreenScaffold(
-                scrollState = listState,
-                edgeButton = {
-                    EdgeButton(
-                        onClick = { /*TODO*/ },
-                        colors =
-                            ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            ),
-                    ) {
-                        Text("More")
-                    }
-                },
-            ) { contentPadding -> // ScreenScaffold provides default padding; adjust as needed
-                TransformingLazyColumn(contentPadding = contentPadding, state = listState) {
+                scrollState = listState
+            ) { contentPadding ->
+                TransformingLazyColumn(
+                    contentPadding = contentPadding,
+                    state = listState,
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     item {
-                        ListHeader(
-                            modifier =
-                                Modifier.fillMaxWidth().transformedHeight(this, transformationSpec),
-                            transformation = SurfaceTransformation(transformationSpec),
-                        ) {
-                            Text(text = stringResource(R.string.hello_world, greetingName))
-                        }
-                    }
-                    item {
-                        Button(
-                            onClick = { /*TODO*/ },
-                            modifier = Modifier.fillMaxWidth()
-                                .transformedHeight(this, transformationSpec),
-                            transformation = SurfaceTransformation(transformationSpec),
-                        ) {
-                            Text("Button A")
-                        }
-                    }
-                    item {
-                        Button(
-                            onClick = { /*TODO*/ },
-                            modifier = Modifier.fillMaxWidth()
-                                .transformedHeight(this, transformationSpec),
-                            transformation = SurfaceTransformation(transformationSpec),
-                        ) {
-                            Text("Button B")
-                        }
-                    }
-                    item {
-                        Button(
-                            onClick = { /*TODO*/ },
-                            modifier = Modifier.fillMaxWidth()
-                                .transformedHeight(this, transformationSpec),
-                            transformation = SurfaceTransformation(transformationSpec),
-                        ) {
-                            Text("Button C")
-                        }
+                        StatusHeaderCard(
+                            isRootGranted = snapshot.isRootGranted,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .transformedHeight(this, transformationSpec)
+                        )
                     }
 
+                    item {
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+
+                    item {
+                        CpuCard(
+                            cpu = snapshot.cpu,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .transformedHeight(this, transformationSpec)
+                        )
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+
+                    item {
+                        ThermalCard(
+                            thermal = snapshot.thermal,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .transformedHeight(this, transformationSpec)
+                        )
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+
+                    item {
+                        BatteryCard(
+                            battery = snapshot.battery,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .transformedHeight(this, transformationSpec)
+                        )
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+
+                    item {
+                        MemoryStorageCard(
+                            memory = snapshot.memory,
+                            storage = snapshot.storage,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .transformedHeight(this, transformationSpec)
+                        )
+                    }
                 }
             }
         }
@@ -110,6 +132,44 @@ fun WearApp(greetingName: String) {
 @WearPreviewDevices
 @WearPreviewFontScales
 @Composable
-fun DefaultPreview() {
-    WearApp("Preview Android")
+fun WearmonitorPreview() {
+    val sampleSnapshot = SystemSnapshot(
+        isRootGranted = true,
+        cpu = CpuInfo(
+            overallUsagePercent = 42.5f,
+            cores = listOf(
+                CpuCoreInfo(0, 1400, isOnline = true),
+                CpuCoreInfo(1, 1400, isOnline = true),
+                CpuCoreInfo(2, 800, isOnline = true),
+                CpuCoreInfo(3, 800, isOnline = true)
+            ),
+            governor = "schedutil"
+        ),
+        thermal = ThermalInfo(
+            batteryTempC = 36.2f,
+            socTempC = 44.8f
+        ),
+        battery = BatteryInfo(
+            levelPercent = 78,
+            isCharging = true,
+            currentMa = 420,
+            voltageMv = 4120,
+            powerWatts = 1.73f
+        ),
+        memory = MemoryInfo(
+            totalMb = 1850,
+            availMb = 720,
+            usedMb = 1130,
+            usedPercent = 61.1f,
+            swapTotalMb = 1024,
+            swapFreeMb = 820
+        ),
+        storage = StorageInfo(
+            totalBytes = 32L * 1024 * 1024 * 1024,
+            freeBytes = 18L * 1024 * 1024 * 1024,
+            usedBytes = 14L * 1024 * 1024 * 1024,
+            usedPercent = 43.7f
+        )
+    )
+    WearmonitorApp(snapshot = sampleSnapshot)
 }
