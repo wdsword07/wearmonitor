@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -18,8 +19,6 @@ import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
 import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.ScreenScaffold
-import androidx.wear.compose.material3.lazy.rememberTransformationSpec
-import androidx.wear.compose.material3.lazy.transformedHeight
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import androidx.wear.compose.ui.tooling.preview.WearPreviewFontScales
 import com.github.wdsword07.wearmonitor.data.model.BatteryInfo
@@ -61,7 +60,6 @@ fun WearmonitorApp(
     WearmonitorTheme {
         AppScaffold {
             val listState = rememberTransformingLazyColumnState()
-            val transformationSpec = rememberTransformationSpec()
 
             // 监听列表滚动状态，在用户滑动时平息数据刷新，消除掉帧
             LaunchedEffect(listState) {
@@ -75,44 +73,41 @@ fun WearmonitorApp(
                 scrollState = listState
             ) { contentPadding ->
                 TransformingLazyColumn(
-                    contentPadding = contentPadding,
+                    contentPadding = PaddingValues(
+                        top = contentPadding.calculateTopPadding() + 8.dp,
+                        bottom = contentPadding.calculateBottomPadding() + 16.dp,
+                        start = 10.dp,
+                        end = 10.dp
+                    ),
                     state = listState,
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     item(key = "header") {
                         StatusHeaderCard(
                             isRootGranted = snapshot.isRootGranted,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .transformedHeight(this, transformationSpec)
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
 
                     item(key = "cpu") {
                         CpuCard(
                             cpu = snapshot.cpu,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .transformedHeight(this, transformationSpec)
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
 
                     item(key = "thermal") {
                         ThermalCard(
                             thermal = snapshot.thermal,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .transformedHeight(this, transformationSpec)
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
 
                     item(key = "battery") {
                         BatteryCard(
                             battery = snapshot.battery,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .transformedHeight(this, transformationSpec)
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
 
@@ -120,9 +115,7 @@ fun WearmonitorApp(
                         MemoryStorageCard(
                             memory = snapshot.memory,
                             storage = snapshot.storage,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .transformedHeight(this, transformationSpec)
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }

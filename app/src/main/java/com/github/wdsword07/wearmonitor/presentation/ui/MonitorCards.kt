@@ -43,14 +43,15 @@ fun StatusHeaderCard(
         )
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(4.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "WearMonitor",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = if (isRootGranted) "ROOTED" else "NO ROOT",
@@ -69,9 +70,12 @@ fun CpuCard(
 ) {
     Card(
         onClick = {},
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -85,7 +89,8 @@ fun CpuCard(
                 Text(
                     text = String.format(Locale.US, "%.1f%%", cpu.overallUsagePercent),
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -96,7 +101,7 @@ fun CpuCard(
             )
 
             if (cpu.cores.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 val onlineCores = cpu.cores.filter { it.isOnline }
                 Text(
                     text = "核心: ${onlineCores.size}/${cpu.cores.size} 在线",
@@ -135,9 +140,12 @@ fun ThermalCard(
 ) {
     Card(
         onClick = {},
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp)) {
             Text(
                 text = "温度状态",
                 style = MaterialTheme.typography.titleSmall,
@@ -190,9 +198,12 @@ fun BatteryCard(
 ) {
     Card(
         onClick = {},
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -217,7 +228,7 @@ fun BatteryCard(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -261,9 +272,12 @@ fun MemoryStorageCard(
 ) {
     Card(
         onClick = {},
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp)) {
             Text(
                 text = "内存与存储",
                 style = MaterialTheme.typography.titleSmall,
@@ -283,7 +297,8 @@ fun MemoryStorageCard(
                 Text(
                     text = String.format(Locale.US, "%.0f%%", memory.usedPercent),
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             LinearProgressIndicator(
@@ -302,7 +317,7 @@ fun MemoryStorageCard(
             }
 
             if (storage.totalBytes > 0) {
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 val usedGb = storage.usedBytes / (1024f * 1024 * 1024)
                 val totalGb = storage.totalBytes / (1024f * 1024 * 1024)
                 Row(
@@ -317,7 +332,8 @@ fun MemoryStorageCard(
                     Text(
                         text = String.format(Locale.US, "%.0f%%", storage.usedPercent),
                         style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 LinearProgressIndicator(
