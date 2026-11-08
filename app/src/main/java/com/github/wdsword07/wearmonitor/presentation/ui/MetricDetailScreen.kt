@@ -274,7 +274,7 @@ fun MetricDetailScreen(
                 }
 
                 MetricDetailType.MEMORY -> {
-                    item(key = "memory_chart") {
+                    item(key = "ram_chart") {
                         val points = history.map { it.memory.usedPercent }
                         Card(
                             onClick = {},
@@ -285,10 +285,10 @@ fun MetricDetailScreen(
                         ) {
                             Column(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
                                 Text(
-                                    text = String.format(Locale.US, "RAM 占用: %.0f%% (%d MB)", latest.memory.usedPercent, latest.memory.usedMb),
+                                    text = String.format(Locale.US, "RAM 占用: %.0f%% (%d/%d MB)", latest.memory.usedPercent, latest.memory.usedMb, latest.memory.totalMb),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = Color(0xFF64B5F6)
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 MetricTrendChart(
@@ -302,7 +302,37 @@ fun MetricDetailScreen(
                         }
                     }
 
-                    item(key = "memory_details") {
+                    if (latest.memory.swapTotalMb > 0) {
+                        item(key = "swap_chart") {
+                            val swapPoints = history.map { it.memory.swapUsedPercent }
+                            Card(
+                                onClick = {},
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                                )
+                            ) {
+                                Column(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
+                                    Text(
+                                        text = String.format(Locale.US, "Swap 占用: %.0f%% (%d/%d MB)", latest.memory.swapUsedPercent, latest.memory.swapUsedMb, latest.memory.swapTotalMb),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFBA68C8)
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    MetricTrendChart(
+                                        points = swapPoints,
+                                        fixedMinY = 0f,
+                                        fixedMaxY = 100f,
+                                        unit = "%",
+                                        lineColor = Color(0xFFBA68C8)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    item(key = "ram_details") {
                         Card(
                             onClick = {},
                             modifier = Modifier.fillMaxWidth(),
@@ -312,17 +342,24 @@ fun MetricDetailScreen(
                         ) {
                             Column(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
                                 Text(
-                                    text = "内存划分明细",
+                                    text = "RAM 物理内存明细",
                                     style = MaterialTheme.typography.titleSmall,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = Color(0xFF64B5F6)
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Text("可用空闲", style = MaterialTheme.typography.bodySmall)
-                                    Text("${latest.memory.availMb} MB", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                    Text("已用物理 RAM", style = MaterialTheme.typography.bodySmall)
+                                    Text("${latest.memory.usedMb} MB", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("系统可用空闲", style = MaterialTheme.typography.bodySmall)
+                                    Text("${latest.memory.availMb} MB", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
                                 }
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
@@ -331,15 +368,104 @@ fun MetricDetailScreen(
                                     Text("总物理 RAM", style = MaterialTheme.typography.bodySmall)
                                     Text("${latest.memory.totalMb} MB", style = MaterialTheme.typography.bodySmall)
                                 }
+                            }
+                        }
+                    }
+
+                    item(key = "swap_details") {
+                        Card(
+                            onClick = {},
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
+                                Text(
+                                    text = "Swap & ZRAM 深度明细",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = Color(0xFFBA68C8)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
                                 if (latest.memory.swapTotalMb > 0) {
-                                    val swapUsed = (latest.memory.swapTotalMb - latest.memory.swapFreeMb).coerceAtLeast(0)
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("Swap 已用容量", style = MaterialTheme.typography.bodySmall)
+                                        Text("${latest.memory.swapUsedMb} MB", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                    }
                                     Row(
                                         modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
-                                        Text("ZRAM / Swap 已用", style = MaterialTheme.typography.bodySmall)
-                                        Text("$swapUsed / ${latest.memory.swapTotalMb} MB", style = MaterialTheme.typography.bodySmall)
+                                        Text("Swap 剩余空闲", style = MaterialTheme.typography.bodySmall)
+                                        Text("${latest.memory.swapFreeMb} MB", style = MaterialTheme.typography.bodySmall)
                                     }
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("Swap 配置总计", style = MaterialTheme.typography.bodySmall)
+                                        Text("${latest.memory.swapTotalMb} MB", style = MaterialTheme.typography.bodySmall)
+                                    }
+
+                                    if (latest.memory.zramRatio > 0f) {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text("ZRAM 实时压缩比", style = MaterialTheme.typography.bodySmall)
+                                            Text(String.format(Locale.US, "%.2f : 1", latest.memory.zramRatio), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50))
+                                        }
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text("未压缩原始数据", style = MaterialTheme.typography.bodySmall)
+                                            Text(String.format(Locale.US, "%.1f MB", latest.memory.zramOrigMb), style = MaterialTheme.typography.bodySmall)
+                                        }
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text("压缩后物理占用", style = MaterialTheme.typography.bodySmall)
+                                            Text(String.format(Locale.US, "%.1f MB", latest.memory.zramComprMb), style = MaterialTheme.typography.bodySmall)
+                                        }
+                                        val savedMb = (latest.memory.zramOrigMb - latest.memory.zramComprMb).coerceAtLeast(0f)
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text("节省物理内存", style = MaterialTheme.typography.bodySmall)
+                                            Text(String.format(Locale.US, "%.1f MB", savedMb), style = MaterialTheme.typography.bodySmall, color = Color(0xFF4CAF50))
+                                        }
+                                    }
+
+                                    if (latest.memory.zramAlgorithm.isNotBlank()) {
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text("压缩算法", style = MaterialTheme.typography.bodySmall)
+                                            Text(latest.memory.zramAlgorithm.uppercase(Locale.US), style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "提示: Android 采用 ZRAM 内存压缩盘，由 CPU 快速解压。内核 swappiness 会积极将冷数据压缩以释放大块物理 RAM，高 Swap 占用率属正常现象。",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                        color = MaterialTheme.colorScheme.outline
+                                    )
+                                } else {
+                                    Text(
+                                        text = "设备未启用 Swap / ZRAM 分区",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
                             }
                         }

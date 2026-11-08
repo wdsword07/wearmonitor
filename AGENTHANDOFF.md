@@ -34,9 +34,9 @@ wearmonitor/
 │   │   │   ├── theme/
 │   │   │   │   └── Theme.kt                   # Wear Compose Material 3 基础主题
 │   │   │   └── ui/
-│   │   │       ├── MonitorCards.kt            # 主面板卡片 (StatusHeaderCard, CpuCard, ThermalCard, BatteryCard, MemoryStorageCard)
+│   │   │       ├── MonitorCards.kt            # 主面板卡片 (StatusHeaderCard, CpuCard, ThermalCard, BatteryCard, MemoryCard, StorageCard)
 │   │   │       ├── MetricTrendChart.kt        # 专为 Wear OS 圆屏优化的微秒级轻量 Canvas 渐变曲线图
-│   │   │       └── MetricDetailScreen.kt      # 4 个指标的 1 分钟历史曲线二级深度详情页面
+│   │   │       └── MetricDetailScreen.kt      # 各指标 1 分钟历史曲线二级深度详情页面 (含 RAM/Swap 双走势与 ZRAM 明细)
 │   │   └── tile/
 │   │       └── MainTileService.kt             # ProtoLayout Material 3 规范磁贴实现 (CPU+RAM+电量温度)
 │   ├── res/                                   # 自适应矢量图标、启动 Splash 图标、各密度 WebP 资源
@@ -120,5 +120,4 @@ adb logcat -s WearMonitor_Root:D AndroidRuntime:E
 
 ## 6. 后续演进建议
 1. **磁贴丰富度**：当前 Tile 满足系统核心指标展示，可进一步支持根据用户偏好定制磁贴内显示的首选指标（如纯温度卡片或纯功率卡片）。
-2. **ZRAM 压缩比展示**：可在内存二级详情页加入 `/sys/block/zram0/orig_data_size` 与 `compr_data_size` 计算实时内存压缩率（如 `3.1 : 1`）。
-3. **温度报警阈值震动提醒（可选）**：通过 Wearable Haptic Feedback 在芯片或电池温度超过警戒阈值（如 48°C）时轻触震动提示。
+2. **温度报警阈值震动提醒（可选）**：通过 Wearable Haptic Feedback 在芯片或电池温度超过警戒阈值（如 48°C）时轻触震动提示。

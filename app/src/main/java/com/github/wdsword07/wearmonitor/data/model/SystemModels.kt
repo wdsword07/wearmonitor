@@ -40,7 +40,17 @@ data class MemoryInfo(
     val usedMb: Long,
     val usedPercent: Float,
     val swapTotalMb: Long = 0,
-    val swapFreeMb: Long = 0
+    val swapFreeMb: Long = 0,
+    val swapUsedMb: Long = (swapTotalMb - swapFreeMb).coerceAtLeast(0L),
+    val swapUsedPercent: Float = if (swapTotalMb > 0) {
+        (((swapTotalMb - swapFreeMb).coerceAtLeast(0L).toFloat() / swapTotalMb.toFloat()) * 100f).coerceIn(0f, 100f)
+    } else {
+        0f
+    },
+    val zramOrigMb: Float = 0f,
+    val zramComprMb: Float = 0f,
+    val zramRatio: Float = 0f,
+    val zramAlgorithm: String = ""
 )
 
 data class StorageInfo(
@@ -48,13 +58,17 @@ data class StorageInfo(
     val freeBytes: Long,
     val usedBytes: Long,
     val usedPercent: Float
-)
+) {
+    val totalGb: Float get() = totalBytes / (1024f * 1024f * 1024f)
+    val freeGb: Float get() = freeBytes / (1024f * 1024f * 1024f)
+    val usedGb: Float get() = usedBytes / (1024f * 1024f * 1024f)
+}
 
 enum class MetricDetailType(val title: String) {
     CPU("CPU 趋势"),
     THERMAL("温度趋势"),
     BATTERY("供电趋势"),
-    MEMORY("内存趋势")
+    MEMORY("RAM & Swap")
 }
 
 data class SystemSnapshot(

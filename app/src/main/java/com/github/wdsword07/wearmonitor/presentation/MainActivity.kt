@@ -34,9 +34,10 @@ import com.github.wdsword07.wearmonitor.data.model.ThermalInfo
 import com.github.wdsword07.wearmonitor.presentation.theme.WearmonitorTheme
 import com.github.wdsword07.wearmonitor.presentation.ui.BatteryCard
 import com.github.wdsword07.wearmonitor.presentation.ui.CpuCard
-import com.github.wdsword07.wearmonitor.presentation.ui.MemoryStorageCard
+import com.github.wdsword07.wearmonitor.presentation.ui.MemoryCard
 import com.github.wdsword07.wearmonitor.presentation.ui.MetricDetailScreen
 import com.github.wdsword07.wearmonitor.presentation.ui.StatusHeaderCard
+import com.github.wdsword07.wearmonitor.presentation.ui.StorageCard
 import com.github.wdsword07.wearmonitor.presentation.ui.ThermalCard
 
 class MainActivity : ComponentActivity() {
@@ -146,10 +147,16 @@ fun WearmonitorApp(
                             }
 
                             item(key = "memory") {
-                                MemoryStorageCard(
+                                MemoryCard(
                                     memory = snapshot.memory,
+                                    onClick = { onOpenDetail(MetricDetailType.MEMORY) },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+
+                            item(key = "storage") {
+                                StorageCard(
                                     storage = snapshot.storage,
-                                    onMemoryClick = { onOpenDetail(MetricDetailType.MEMORY) },
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
@@ -194,7 +201,13 @@ fun WearmonitorPreview() {
             usedMb = 1130,
             usedPercent = 61.1f,
             swapTotalMb = 1024,
-            swapFreeMb = 820
+            swapFreeMb = 204,
+            swapUsedMb = 820,
+            swapUsedPercent = 80.1f,
+            zramOrigMb = 1850.5f,
+            zramComprMb = 650.2f,
+            zramRatio = 2.85f,
+            zramAlgorithm = "lz4"
         ),
         storage = StorageInfo(
             totalBytes = 32L * 1024 * 1024 * 1024,

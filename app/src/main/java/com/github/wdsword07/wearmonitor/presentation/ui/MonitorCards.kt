@@ -315,14 +315,13 @@ fun BatteryCard(
 }
 
 @Composable
-fun MemoryStorageCard(
+fun MemoryCard(
     memory: MemoryInfo,
-    storage: StorageInfo,
-    onMemoryClick: () -> Unit = {},
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
-        onClick = onMemoryClick,
+        onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
@@ -336,7 +335,7 @@ fun MemoryStorageCard(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "内存与存储",
+                        text = "RAM / Swap",
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -346,6 +345,12 @@ fun MemoryStorageCard(
                         color = MaterialTheme.colorScheme.outline
                     )
                 }
+                Text(
+                    text = String.format(Locale.US, "RAM %.0f%%", memory.usedPercent),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -370,42 +375,116 @@ fun MemoryStorageCard(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            Spacer(modifier = Modifier.height(4.dp))
             if (memory.swapTotalMb > 0) {
-                Spacer(modifier = Modifier.height(2.dp))
-                val swapUsed = (memory.swapTotalMb - memory.swapFreeMb).coerceAtLeast(0)
-                Text(
-                    text = "Swap: $swapUsed / ${memory.swapTotalMb} MB",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                    color = MaterialTheme.colorScheme.outline
-                )
-            }
-
-            if (storage.totalBytes > 0) {
-                Spacer(modifier = Modifier.height(4.dp))
-                val usedGb = storage.usedBytes / (1024f * 1024 * 1024)
-                val totalGb = storage.totalBytes / (1024f * 1024 * 1024)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = String.format(Locale.US, "存储 (%.1f/%.1f GB)", usedGb, totalGb),
+                        text = "Swap (${memory.swapUsedMb}/${memory.swapTotalMb} MB)",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = String.format(Locale.US, "%.0f%%", storage.usedPercent),
+                        text = String.format(Locale.US, "%.0f%%", memory.swapUsedPercent),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 LinearProgressIndicator(
-                    progress = { (storage.usedPercent / 100f).coerceIn(0.02f, 1f) },
+                    progress = { (memory.swapUsedPercent / 100f).coerceIn(0.02f, 1f) },
                     modifier = Modifier.fillMaxWidth()
+                )
+
+                if (memory.zramRatio > 0f) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    val algoText = if (memory.zramAlgorithm.isNotBlank()) " (${memory.zramAlgorithm})" else ""
+                    Text(
+                        text = "ZRAM 压缩比: ${String.format(Locale.US, "%.2f : 1", memory.zramRatio)}$algoText",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+            } else {
+                Text(
+                    text = "Swap: 未启用",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                    color = MaterialTheme.colorScheme.outline
                 )
             }
         }
+    }
+}
+
+@Composable
+fun StorageCard(
+    storage: StorageInfo,
+    onClick: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "内部存储 (ROM)",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = String.format(Locale.US, "%.0f%%", storage.usedPercent),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = String.format(Locale.US, "已用 %.1f / %.1f GB", storage.usedGb, storage.totalGb),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = String.format(Locale.US, "可用 %.1f GB", storage.freeGb),
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
+            LinearProgressIndicator(
+                progress = { (storage.usedPercent / 100f).coerceIn(0.02f, 1f) },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Deprecated("Split into MemoryCard and StorageCard", ReplaceWith("MemoryCard and StorageCard"))
+@Composable
+fun MemoryStorageCard(
+    memory: MemoryInfo,
+    storage: StorageInfo,
+    onMemoryClick: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        MemoryCard(memory = memory, onClick = onMemoryClick)
+        StorageCard(storage = storage)
     }
 }
 
