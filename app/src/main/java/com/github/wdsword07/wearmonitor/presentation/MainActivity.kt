@@ -17,10 +17,13 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.foundation.SwipeToDismissValue
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
+import androidx.wear.compose.foundation.rememberSwipeToDismissBoxState
 import androidx.wear.compose.material3.AppScaffold
 import androidx.wear.compose.material3.ScreenScaffold
+import androidx.wear.compose.material3.SwipeToDismissBox
 import androidx.wear.compose.ui.tooling.preview.WearPreviewDevices
 import androidx.wear.compose.ui.tooling.preview.WearPreviewFontScales
 import com.github.wdsword07.wearmonitor.data.model.BatteryInfo
@@ -80,18 +83,22 @@ fun WearmonitorApp(
 ) {
     WearmonitorTheme {
         AppScaffold {
-            Crossfade(
-                targetState = detailType,
-                label = "navigation_crossfade"
-            ) { type ->
-                if (type != null) {
-                    MetricDetailScreen(
-                        type = type,
-                        history = history,
-                        latest = snapshot,
-                        onBack = onBack
-                    )
-                } else {
+            val swipeDismissState = rememberSwipeToDismissBoxState()
+            LaunchedEffect(swipeDismissState.currentValue) {
+                if (swipeDismissState.currentValue == SwipeToDismissValue.Dismissed) {
+                    swipeDismissState.snapTo(SwipeToDismissValue.Default)
+                    onBack()
+                }
+            }
+
+            SwipeToDismissBox(
+                state = swipeDismissState,
+                userSwipeEnabled = detailType != null,
+                backgroundKey = "dashboard",
+                contentKey = detailType ?: "dashboard",
+                onDismissed = onBack
+            ) { isBackground ->
+                if (isBackground || detailType == null) {
                     val listState = rememberTransformingLazyColumnState()
 
                     LaunchedEffect(listState) {
@@ -162,6 +169,13 @@ fun WearmonitorApp(
                             }
                         }
                     }
+                } else {
+                    MetricDetailScreen(
+                        type = detailType,
+                        history = history,
+                        latest = snapshot,
+                        onBack = onBack
+                    )
                 }
             }
         }

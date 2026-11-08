@@ -32,11 +32,11 @@ wearmonitor/
 │   │   │   ├── MainActivity.kt                # 主入口 Activity、Crossfade 页面导航、滑动防抖监听、BackHandler
 │   │   │   ├── SystemMonitorViewModel.kt      # 状态流管理、30 点 (60秒) 历史滑动队列、滚动静默调度
 │   │   │   ├── theme/
-│   │   │   │   └── Theme.kt                   # Wear Compose Material 3 基础主题
+│   │   │   │   └── Theme.kt                   # Wear Compose Material 3 主题 (支持 dynamicColorScheme 系统动态配色)
 │   │   │   └── ui/
 │   │   │       ├── MonitorCards.kt            # 主面板卡片 (StatusHeaderCard, CpuCard, ThermalCard, BatteryCard, MemoryCard, StorageCard)
-│   │   │       ├── MetricTrendChart.kt        # 专为 Wear OS 圆屏优化的微秒级轻量 Canvas 渐变曲线图
-│   │   │       └── MetricDetailScreen.kt      # 各指标 1 分钟历史曲线二级深度详情页面 (含 RAM/Swap 双走势与 ZRAM 明细)
+│   │   │       ├── MetricTrendChart.kt        # 动态缩放、30/60s标尺、Max/Min/Avg 标注的轻量 Canvas 渐变曲线图
+│   │   │       └── MetricDetailScreen.kt      # 各指标 1 分钟历史曲线二级深度详情页面 (原生 SwipeToDismiss 侧滑返回)
 │   │   └── tile/
 │   │       └── MainTileService.kt             # ProtoLayout Material 3 规范磁贴实现 (CPU+RAM+电量温度)
 │   ├── res/                                   # 自适应矢量图标、启动 Splash 图标、各密度 WebP 资源

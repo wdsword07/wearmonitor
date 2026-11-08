@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.MaterialTheme
@@ -29,8 +30,6 @@ fun MetricTrendChart(
     modifier: Modifier = Modifier,
     lineColor: Color = MaterialTheme.colorScheme.primary,
     fillColor: Color = lineColor.copy(alpha = 0.25f),
-    fixedMinY: Float? = null,
-    fixedMaxY: Float? = null,
     unit: String = "%"
 ) {
     if (points.isEmpty()) {
@@ -38,68 +37,108 @@ fun MetricTrendChart(
         return
     }
 
-    val minVal = fixedMinY ?: (points.minOrNull() ?: 0f)
-    val maxVal = (fixedMaxY ?: (points.maxOrNull() ?: 100f)).coerceAtLeast(minVal + 1f)
+    val minVal = points.minOrNull() ?: 0f
+    val maxVal = points.maxOrNull() ?: 0f
+    val avgVal = if (points.isNotEmpty()) points.average().toFloat() else 0f
+
+    // 动态缩放纵轴：计算动态跨度，预留上下 10% 缓冲，保证微小波动也能高分辨率展现
+    val span = (maxVal - minVal).coerceAtLeast(0.5f)
+    val renderMin = minVal - span * 0.1f
+    val renderMax = maxVal + span * 0.1f
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // 极值标注栏
+        // 纵轴动态极值与均值标注栏
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = String.format(Locale.US, "近1min: 最低 %.0f%s", minVal, unit),
+                text = String.format(Locale.US, "低: %.1f%s", minVal, unit),
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                color = MaterialTheme.colorScheme.outline
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = String.format(Locale.US, "最高 %.0f%s", maxVal, unit),
+                text = String.format(Locale.US, "均: %.1f%s", avgVal, unit),
                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                color = MaterialTheme.colorScheme.outline
+                fontWeight = FontWeight.SemiBold,
+                color = lineColor
+            )
+            Text(
+                text = String.format(Locale.US, "高: %.1f%s", maxVal, unit),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(72.dp)
+                .height(68.dp)
                 .padding(vertical = 4.dp)
         ) {
             val width = size.width
             val height = size.height
 
-            // 绘制中位参考虚线
-            val midY = height / 2f
+            // 1. 绘制横轴时间网格线 (30s 中位虚线，60s / 0s 边界虚线)
+            drawLine(
+                color = Color.White.copy(alpha = 0.08f),
+                start = Offset(0f, 0f),
+                end = Offset(0f, height),
+                strokeWidth = 1.dp.toPx()
+            )
             drawLine(
                 color = Color.White.copy(alpha = 0.12f),
-                start = Offset(0f, midY),
-                end = Offset(width, midY),
+                start = Offset(width / 2f, 0f),
+                end = Offset(width / 2f, height),
                 strokeWidth = 1.dp.toPx(),
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f), 0f)
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f), 0f)
+            )
+            drawLine(
+                color = Color.White.copy(alpha = 0.08f),
+                start = Offset(width, 0f),
+                end = Offset(width, height),
+                strokeWidth = 1.dp.toPx()
             )
 
+            // 2. 绘制纵轴动态均值参考虚线
+            val avgNormY = ((avgVal - renderMin) / (renderMax - renderMin)).coerceIn(0f, 1f)
+            val avgY = height - (avgNormY * (height - 8f)) - 4f
+            drawLine(
+                color = lineColor.copy(alpha = 0.35f),
+                start = Offset(0f, avgY),
+                end = Offset(width, avgY),
+                strokeWidth = 1.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(4f, 4f), 0f)
+            )
+
+            // 3. 计算 60 秒时间窗口内的 X 坐标（30 个点，间隔 2 秒，向右锚定至当前时刻）
+            val maxSpanSteps = 29f
+            val stepX = width / maxSpanSteps
+
             if (points.size == 1) {
-                // 单点绘制水平线
-                val y = height - ((points[0] - minVal) / (maxVal - minVal)).coerceIn(0f, 1f) * height
-                drawLine(
+                val normY = ((points[0] - renderMin) / (renderMax - renderMin)).coerceIn(0f, 1f)
+                val y = height - (normY * (height - 8f)) - 4f
+                drawCircle(
                     color = lineColor,
-                    start = Offset(0f, y),
-                    end = Offset(width, y),
-                    strokeWidth = 2.dp.toPx()
+                    radius = 3.dp.toPx(),
+                    center = Offset(width, y)
                 )
                 return@Canvas
             }
 
-            val stepX = width / (points.size - 1).coerceAtLeast(1)
             val strokePath = Path()
             val fillPath = Path()
 
+            var startX = 0f
             points.forEachIndexed { index, value ->
-                val x = index * stepX
-                val normY = ((value - minVal) / (maxVal - minVal)).coerceIn(0f, 1f)
-                val y = height - (normY * (height - 8f)) - 4f // 预留上下 4px 避免边缘切顶
+                // 右端 index == lastIndex 为当前 0s，向左倒推
+                val x = (width - (points.lastIndex - index) * stepX).coerceAtLeast(0f)
+                val normY = ((value - renderMin) / (renderMax - renderMin)).coerceIn(0f, 1f)
+                val y = height - (normY * (height - 8f)) - 4f
 
                 if (index == 0) {
+                    startX = x
                     strokePath.moveTo(x, y)
                     fillPath.moveTo(x, height)
                     fillPath.lineTo(x, y)
@@ -110,9 +149,10 @@ fun MetricTrendChart(
 
                 if (index == points.lastIndex) {
                     fillPath.lineTo(x, height)
+                    fillPath.lineTo(startX, height)
                     fillPath.close()
 
-                    // 绘制最新末端指示光点
+                    // 最新末端指示光点
                     drawCircle(
                         color = lineColor,
                         radius = 3.dp.toPx(),
@@ -121,7 +161,7 @@ fun MetricTrendChart(
                 }
             }
 
-            // 绘制半透明渐变区域
+            // 绘制动态折线与渐变背景
             drawPath(
                 path = fillPath,
                 brush = Brush.verticalGradient(
@@ -131,11 +171,33 @@ fun MetricTrendChart(
                 )
             )
 
-            // 绘制主折线
             drawPath(
                 path = strokePath,
                 color = lineColor,
                 style = Stroke(width = 2.dp.toPx())
+            )
+        }
+
+        // 横轴 60s / 30s / 0s 时间标注栏
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "60s",
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                color = MaterialTheme.colorScheme.outline
+            )
+            Text(
+                text = "30s",
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                color = MaterialTheme.colorScheme.outline
+            )
+            Text(
+                text = "0s",
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                color = MaterialTheme.colorScheme.outline
             )
         }
     }

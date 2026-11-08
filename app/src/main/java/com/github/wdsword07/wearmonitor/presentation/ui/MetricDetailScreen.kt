@@ -15,14 +15,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
-import androidx.wear.compose.material3.Button
-import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.Card
 import androidx.wear.compose.material3.CardDefaults
+import androidx.wear.compose.material3.ListHeader
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
@@ -55,27 +55,18 @@ fun MetricDetailScreen(
             verticalArrangement = Arrangement.spacedBy(6.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            // 顶部返回栏
+            // 顶部标题栏（移除显式返回按钮以避免圆屏边缘遮挡，手表端可直接侧滑返回）
             item(key = "nav_header") {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                ListHeader(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp)
                 ) {
-                    Button(
-                        onClick = onBack,
-                        modifier = Modifier.size(32.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                        )
-                    ) {
-                        Text("‹", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    }
-
-                    Spacer(modifier = Modifier.size(8.dp))
                     Text(
                         text = type.title,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
@@ -102,8 +93,6 @@ fun MetricDetailScreen(
                                 Spacer(modifier = Modifier.height(4.dp))
                                 MetricTrendChart(
                                     points = points,
-                                    fixedMinY = 0f,
-                                    fixedMaxY = 100f,
                                     unit = "%",
                                     lineColor = MaterialTheme.colorScheme.primary
                                 )
@@ -293,8 +282,6 @@ fun MetricDetailScreen(
                                 Spacer(modifier = Modifier.height(4.dp))
                                 MetricTrendChart(
                                     points = points,
-                                    fixedMinY = 0f,
-                                    fixedMaxY = 100f,
                                     unit = "%",
                                     lineColor = Color(0xFF64B5F6)
                                 )
@@ -322,8 +309,6 @@ fun MetricDetailScreen(
                                     Spacer(modifier = Modifier.height(4.dp))
                                     MetricTrendChart(
                                         points = swapPoints,
-                                        fixedMinY = 0f,
-                                        fixedMaxY = 100f,
                                         unit = "%",
                                         lineColor = Color(0xFFBA68C8)
                                     )
