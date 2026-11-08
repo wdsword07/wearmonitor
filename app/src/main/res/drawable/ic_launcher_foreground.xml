@@ -1,30 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:pathData="M31,63.928c0,0 6.4,-11 12.1,-13.1c7.2,-2.6 26,-1.4 26,-1.4l38.1,38.1L107,108.928l-32,-1L31,63.928z">
-        <aapt:attr name="android:fillColor">
+
+    <!-- Cardinal Precision Ticks -->
+    <path
+        android:pathData="M54,20.5 L54,22.5"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:strokeColor="#00E5FF" />
+    <path
+        android:pathData="M54,85.5 L54,87.5"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:strokeColor="#FF9100" />
+    <path
+        android:pathData="M20.5,54 L22.5,54"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:strokeColor="#00E5FF" />
+    <path
+        android:pathData="M85.5,54 L87.5,54"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round"
+        android:strokeColor="#00E676" />
+
+    <!-- Metric Arcs (R = 26, strokeWidth = 2.6) -->
+    <!-- Arc 1: CPU (Upper-Left, Cyan) -->
+    <!-- Track -->
+    <path
+        android:pathData="M30.44,64.99 A26,26 0 0,1 49.49,28.39"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:strokeColor="#2600E5FF" />
+    <!-- Active Glow -->
+    <path
+        android:pathData="M29.2,57.5 A26,26 0 0,1 49.49,28.39"
+        android:strokeWidth="4.2"
+        android:strokeLineCap="round"
+        android:strokeColor="#3300E5FF" />
+    <!-- Active Arc -->
+    <path
+        android:pathData="M29.2,57.5 A26,26 0 0,1 49.49,28.39"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor">
             <gradient
-                android:endX="85.84757"
-                android:endY="92.4963"
-                android:startX="42.9492"
-                android:startY="49.59793"
-                android:type="linear">
-                <item
-                    android:color="#44000000"
-                    android:offset="0.0" />
-                <item
-                    android:color="#00000000"
-                    android:offset="1.0" />
+                android:type="linear"
+                android:startX="26"
+                android:startY="60"
+                android:endX="52"
+                android:endY="26">
+                <item android:offset="0.0" android:color="#FF00B0FF" />
+                <item android:offset="1.0" android:color="#FF00E5FF" />
             </gradient>
         </aapt:attr>
     </path>
+
+    <!-- Arc 2: Battery (Upper-Right, Emerald Green) -->
+    <!-- Track -->
     <path
-        android:fillColor="#FFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M65.3,45.828l3.8,-6.6c0.2,-0.4 0.1,-0.9 -0.3,-1.1c-0.4,-0.2 -0.9,-0.1 -1.1,0.3l-3.9,6.7c-6.3,-2.8 -13.4,-2.8 -19.7,0l-3.9,-6.7c-0.2,-0.4 -0.7,-0.5 -1.1,-0.3C38.8,38.328 38.7,38.828 38.9,39.228l3.8,6.6C36.2,49.428 31.7,56.028 31,63.928h46C76.3,56.028 71.8,49.428 65.3,45.828zM43.4,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2c-0.3,-0.7 -0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C45.3,56.528 44.5,57.328 43.4,57.328L43.4,57.328zM64.6,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2s-0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C66.5,56.528 65.6,57.328 64.6,57.328L64.6,57.328z"
-        android:strokeWidth="1"
-        android:strokeColor="#00000000" />
+        android:pathData="M58.51,28.39 A26,26 0 0,1 77.56,64.99"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:strokeColor="#2600E676" />
+    <!-- Active Glow -->
+    <path
+        android:pathData="M58.51,28.39 A26,26 0 0,1 78.7,56.5"
+        android:strokeWidth="4.2"
+        android:strokeLineCap="round"
+        android:strokeColor="#3300E676" />
+    <!-- Active Arc -->
+    <path
+        android:pathData="M58.51,28.39 A26,26 0 0,1 78.7,56.5"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="56"
+                android:startY="26"
+                android:endX="82"
+                android:endY="60">
+                <item android:offset="0.0" android:color="#FF00E676" />
+                <item android:offset="1.0" android:color="#FF69F0AE" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Arc 3: Temperature / Storage (Bottom, Amber/Orange) -->
+    <!-- Track -->
+    <path
+        android:pathData="M72.38,72.38 A26,26 0 0,1 35.62,72.38"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:strokeColor="#26FF9100" />
+    <!-- Active Glow -->
+    <path
+        android:pathData="M72.38,72.38 A26,26 0 0,1 50.0,79.8"
+        android:strokeWidth="4.2"
+        android:strokeLineCap="round"
+        android:strokeColor="#33FF9100" />
+    <!-- Active Arc -->
+    <path
+        android:pathData="M72.38,72.38 A26,26 0 0,1 50.0,79.8"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="74"
+                android:startY="72"
+                android:endX="48"
+                android:endY="82">
+                <item android:offset="0.0" android:color="#FFFF9100" />
+                <item android:offset="1.0" android:color="#FFFF3D00" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Chip External Pins (8 Pins) -->
+    <!-- Top Pins -->
+    <path
+        android:pathData="M48.5,39.5 h2.2 v3.5 h-2.2 z M57.3,39.5 h2.2 v3.5 h-2.2 z"
+        android:fillColor="#D900E5FF" />
+    <!-- Bottom Pins -->
+    <path
+        android:pathData="M48.5,65 h2.2 v3.5 h-2.2 z M57.3,65 h2.2 v3.5 h-2.2 z"
+        android:fillColor="#D900E5FF" />
+    <!-- Left Pins -->
+    <path
+        android:pathData="M39.5,48.5 h3.5 v2.2 h-3.5 z M39.5,57.3 h3.5 v2.2 h-3.5 z"
+        android:fillColor="#D900E5FF" />
+    <!-- Right Pins -->
+    <path
+        android:pathData="M65,48.5 h3.5 v2.2 h-3.5 z M65,57.3 h3.5 v2.2 h-3.5 z"
+        android:fillColor="#D900E5FF" />
+
+    <!-- Central Processor Chip Package -->
+    <!-- Chip Body -->
+    <path
+        android:pathData="M47,42.5 h14 c2.48,0 4.5,2.02 4.5,4.5 v14 c0,2.48 -2.02,4.5 -4.5,4.5 h-14 c-2.48,0 -4.5,-2.02 -4.5,-4.5 v-14 c0,-2.48 2.02,-4.5 4.5,-4.5 z"
+        android:strokeWidth="0.9"
+        android:strokeColor="#B300E5FF">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="42.5"
+                android:startY="42.5"
+                android:endX="65.5"
+                android:endY="65.5">
+                <item android:offset="0.0" android:color="#FF1E293D" />
+                <item android:offset="1.0" android:color="#FF0E1422" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Inner Silicon Die Area -->
+    <path
+        android:pathData="M47.8,45 h12.4 c1.55,0 2.8,1.25 2.8,2.8 v12.4 c0,1.55 -1.25,2.8 -2.8,2.8 h-12.4 c-1.55,0 -2.8,-1.25 -2.8,-2.8 v-12.4 c0,-1.55 1.25,-2.8 2.8,-2.8 z"
+        android:fillColor="#FF070B14"
+        android:strokeWidth="0.6"
+        android:strokeColor="#FF182338" />
+
+    <!-- Quad-Core Indicators -->
+    <path
+        android:pathData="M48,47 h2.2 v1.3 h-2.2 z M51,47 h2.2 v1.3 h-2.2 z"
+        android:fillColor="#FF00E5FF" />
+    <path
+        android:pathData="M54.8,47 h2.2 v1.3 h-2.2 z M57.8,47 h2.2 v1.3 h-2.2 z"
+        android:fillColor="#FF00E676" />
+
+    <!-- Real-Time Activity / Pulse Telemetry Waveform -->
+    <!-- Glow -->
+    <path
+        android:pathData="M45,54 L48,54 L49.5,56 L51.5,49 L53.5,59 L55.5,52 L57,54 L63,54"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeColor="#4D00E5FF" />
+    <!-- Sharp Trace -->
+    <path
+        android:pathData="M45,54 L48,54 L49.5,56 L51.5,49 L53.5,59 L55.5,52 L57,54 L63,54"
+        android:strokeWidth="1.0"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeColor="#FFFFFFFF" />
+
+    <!-- Peak Sensor Node -->
+    <path
+        android:pathData="M51.5,49.8 A0.8,0.8 0 1,0 51.5,48.2 A0.8,0.8 0 1,0 51.5,49.8"
+        android:fillColor="#FFFFFFFF" />
+
+    <!-- Bottom Status Dots -->
+    <path
+        android:pathData="M50.5,61.4 A0.6,0.6 0 1,0 50.5,60.2 A0.6,0.6 0 1,0 50.5,61.4"
+        android:fillColor="#FF00E5FF" />
+    <path
+        android:pathData="M54.0,61.4 A0.6,0.6 0 1,0 54.0,60.2 A0.6,0.6 0 1,0 54.0,61.4"
+        android:fillColor="#FF00E676" />
+    <path
+        android:pathData="M57.5,61.4 A0.6,0.6 0 1,0 57.5,60.2 A0.6,0.6 0 1,0 57.5,61.4"
+        android:fillColor="#FFFF9100" />
 </vector>
