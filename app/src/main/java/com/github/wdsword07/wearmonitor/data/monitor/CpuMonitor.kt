@@ -11,14 +11,21 @@ class CpuMonitor {
     private var lastTotalTime = 0L
     private var lastIdleTime = 0L
 
+    @Volatile
+    private var detectedCoreIndices: List<Int>? = null
+    @Volatile
+    private var cachedGovernor: String = ""
+
     suspend fun sampleCpuInfo(): CpuInfo = withContext(Dispatchers.IO) {
         val usage = calculateOverallUsage()
         val cores = readCoresInfo()
-        val governor = readGovernor()
+        if (cachedGovernor.isEmpty()) {
+            cachedGovernor = readGovernor()
+        }
         CpuInfo(
             overallUsagePercent = usage,
             cores = cores,
-            governor = governor
+            governor = cachedGovernor
         )
     }
 
@@ -29,7 +36,6 @@ class CpuMonitor {
         if (parts.size < 5) return 0f
 
         try {
-            // cpu user nice system idle iowait irq softirq steal
             val user = parts[1].toLong()
             val nice = parts[2].toLong()
             val system = parts[3].toLong()
@@ -63,36 +69,39 @@ class CpuMonitor {
     }
 
     private suspend fun readCoresInfo(): List<CpuCoreInfo> {
-        val cores = mutableListOf<CpuCoreInfo>()
-        val cpuDir = File("/sys/devices/system/cpu")
-        val cpuFiles = cpuDir.listFiles { _, name -> name.matches(Regex("cpu[0-9]+")) }
-            ?.sortedBy { it.name.substring(3).toIntOrNull() ?: 0 }
+        var indices = detectedCoreIndices
+        if (indices == null) {
+            indices = probeCoreIndices()
+            detectedCoreIndices = indices
+        }
 
-        if (cpuFiles.isNullOrEmpty()) {
-            // 兜底尝试 cpu0..cpu7
-            for (i in 0..7) {
-                val core = readSingleCore(i) ?: break
-                cores.add(core)
-            }
-        } else {
-            for (file in cpuFiles) {
-                val index = file.name.substring(3).toIntOrNull() ?: continue
-                val core = readSingleCore(index)
-                if (core != null) {
-                    cores.add(core)
-                }
-            }
+        val cores = ArrayList<CpuCoreInfo>(indices.size)
+        for (i in indices) {
+            cores.add(readSingleCore(i))
         }
         return cores
     }
 
-    private suspend fun readSingleCore(index: Int): CpuCoreInfo? {
+    private fun probeCoreIndices(): List<Int> {
+        val cpuDir = File("/sys/devices/system/cpu")
+        val cpuFiles = cpuDir.listFiles { _, name -> name.matches(Regex("cpu[0-9]+")) }
+            ?.mapNotNull { it.name.substring(3).toIntOrNull() }
+            ?.sorted()
+
+        return if (!cpuFiles.isNullOrEmpty()) {
+            cpuFiles
+        } else {
+            val availableProcessors = Runtime.getRuntime().availableProcessors().coerceAtLeast(1)
+            (0 until availableProcessors).toList()
+        }
+    }
+
+    private suspend fun readSingleCore(index: Int): CpuCoreInfo {
         val basePath = "/sys/devices/system/cpu/cpu$index"
-        val onlineFile = "$basePath/online"
         val isOnline = if (index == 0) {
             true
         } else {
-            val onlineStr = RootShell.readFile(onlineFile)
+            val onlineStr = RootShell.readFile("$basePath/online")
             onlineStr == null || onlineStr == "1"
         }
 
@@ -106,18 +115,12 @@ class CpuMonitor {
 
         val curFreqStr = RootShell.readFile("$basePath/cpufreq/scaling_cur_freq")
             ?: RootShell.readFile("$basePath/cpufreq/cpuinfo_cur_freq")
-        val minFreqStr = RootShell.readFile("$basePath/cpufreq/scaling_min_freq")
-        val maxFreqStr = RootShell.readFile("$basePath/cpufreq/scaling_max_freq")
 
         val curFreqKhz = curFreqStr?.toIntOrNull() ?: 0
-        val minFreqKhz = minFreqStr?.toIntOrNull() ?: 0
-        val maxFreqKhz = maxFreqStr?.toIntOrNull() ?: 0
 
         return CpuCoreInfo(
             index = index,
             curFreqMhz = curFreqKhz / 1000,
-            minFreqMhz = minFreqKhz / 1000,
-            maxFreqMhz = maxFreqKhz / 1000,
             isOnline = true
         )
     }

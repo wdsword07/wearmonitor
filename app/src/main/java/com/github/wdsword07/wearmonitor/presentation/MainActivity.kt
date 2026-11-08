@@ -4,12 +4,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,17 +43,33 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val snapshot by viewModel.snapshotState.collectAsStateWithLifecycle()
-            WearmonitorApp(snapshot = snapshot)
+            WearmonitorApp(
+                snapshot = snapshot,
+                onScrollInProgressChanged = { isScrolling ->
+                    viewModel.setScrolling(isScrolling)
+                }
+            )
         }
     }
 }
 
 @Composable
-fun WearmonitorApp(snapshot: SystemSnapshot) {
+fun WearmonitorApp(
+    snapshot: SystemSnapshot,
+    onScrollInProgressChanged: (Boolean) -> Unit = {}
+) {
     WearmonitorTheme {
         AppScaffold {
             val listState = rememberTransformingLazyColumnState()
             val transformationSpec = rememberTransformationSpec()
+
+            // 监听列表滚动状态，在用户滑动时平息数据刷新，消除掉帧
+            LaunchedEffect(listState) {
+                snapshotFlow { listState.isScrollInProgress }
+                    .collect { isScrolling ->
+                        onScrollInProgressChanged(isScrolling)
+                    }
+            }
 
             ScreenScaffold(
                 scrollState = listState
@@ -60,9 +77,10 @@ fun WearmonitorApp(snapshot: SystemSnapshot) {
                 TransformingLazyColumn(
                     contentPadding = contentPadding,
                     state = listState,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    item {
+                    item(key = "header") {
                         StatusHeaderCard(
                             isRootGranted = snapshot.isRootGranted,
                             modifier = Modifier
@@ -71,11 +89,7 @@ fun WearmonitorApp(snapshot: SystemSnapshot) {
                         )
                     }
 
-                    item {
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
-
-                    item {
+                    item(key = "cpu") {
                         CpuCard(
                             cpu = snapshot.cpu,
                             modifier = Modifier
@@ -84,11 +98,7 @@ fun WearmonitorApp(snapshot: SystemSnapshot) {
                         )
                     }
 
-                    item {
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
-
-                    item {
+                    item(key = "thermal") {
                         ThermalCard(
                             thermal = snapshot.thermal,
                             modifier = Modifier
@@ -97,11 +107,7 @@ fun WearmonitorApp(snapshot: SystemSnapshot) {
                         )
                     }
 
-                    item {
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
-
-                    item {
+                    item(key = "battery") {
                         BatteryCard(
                             battery = snapshot.battery,
                             modifier = Modifier
@@ -110,11 +116,7 @@ fun WearmonitorApp(snapshot: SystemSnapshot) {
                         )
                     }
 
-                    item {
-                        Spacer(modifier = Modifier.height(4.dp))
-                    }
-
-                    item {
+                    item(key = "memory") {
                         MemoryStorageCard(
                             memory = snapshot.memory,
                             storage = snapshot.storage,

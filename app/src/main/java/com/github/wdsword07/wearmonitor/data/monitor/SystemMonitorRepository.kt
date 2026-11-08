@@ -37,7 +37,7 @@ class SystemMonitorRepository(context: Context) {
         )
     }
 
-    fun getSnapshotFlow(pollIntervalMs: Long = 1500L): Flow<SystemSnapshot> = flow {
+    fun getSnapshotFlow(pollIntervalMs: Long = 2000L): Flow<SystemSnapshot> = flow {
         while (true) {
             emit(getSnapshot())
             delay(pollIntervalMs)

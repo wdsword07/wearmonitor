@@ -9,6 +9,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class MemoryStorageMonitor {
+    @Volatile
+    private var cachedStorage: StorageInfo = StorageInfo(0, 0, 0, 0f)
+    @Volatile
+    private var lastStorageCheckTime: Long = 0
 
     suspend fun sampleMemoryInfo(): MemoryInfo = withContext(Dispatchers.IO) {
         val memInfoContent = RootShell.readFile("/proc/meminfo") ?: return@withContext MemoryInfo(0, 0, 0, 0f)
@@ -52,6 +56,11 @@ class MemoryStorageMonitor {
     }
 
     suspend fun sampleStorageInfo(): StorageInfo = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        if (now - lastStorageCheckTime < 20_000L && cachedStorage.totalBytes > 0) {
+            return@withContext cachedStorage
+        }
+
         try {
             val path = Environment.getDataDirectory()
             val stat = StatFs(path.path)
@@ -68,14 +77,17 @@ class MemoryStorageMonitor {
                 0f
             }
 
-            StorageInfo(
+            val storage = StorageInfo(
                 totalBytes = totalBytes,
                 freeBytes = freeBytes,
                 usedBytes = usedBytes,
                 usedPercent = usedPercent.coerceIn(0f, 100f)
             )
+            cachedStorage = storage
+            lastStorageCheckTime = now
+            storage
         } catch (_: Exception) {
-            StorageInfo(0, 0, 0, 0f)
+            cachedStorage
         }
     }
 }
