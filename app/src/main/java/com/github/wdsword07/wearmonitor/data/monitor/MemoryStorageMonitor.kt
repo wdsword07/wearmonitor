@@ -1,5 +1,7 @@
 package com.github.wdsword07.wearmonitor.data.monitor
 
+import android.app.ActivityManager
+import android.content.Context
 import android.os.Environment
 import android.os.StatFs
 import com.github.wdsword07.wearmonitor.data.model.MemoryInfo
@@ -8,51 +10,56 @@ import com.github.wdsword07.wearmonitor.data.root.RootShell
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class MemoryStorageMonitor {
+class MemoryStorageMonitor(private val context: Context) {
     @Volatile
     private var cachedStorage: StorageInfo = StorageInfo(0, 0, 0, 0f)
     @Volatile
     private var lastStorageCheckTime: Long = 0
 
+    // 缓存 Swap 总量，因为手表 ZRAM 启动后几乎不变
+    @Volatile
+    private var cachedSwapTotalMb: Long = 0
+
     suspend fun sampleMemoryInfo(): MemoryInfo = withContext(Dispatchers.IO) {
-        val memInfoContent = RootShell.readFile("/proc/meminfo") ?: return@withContext MemoryInfo(0, 0, 0, 0f)
-        var totalKb = 0L
-        var availKb = 0L
-        var freeKb = 0L
-        var swapTotalKb = 0L
-        var swapFreeKb = 0L
+        // 1. 使用 Android 原生 ActivityManager（微秒级 JNI，准确扣除系统 PageCache，反映真实可用 RAM）
+        val actManager = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        val amMemInfo = ActivityManager.MemoryInfo()
+        actManager?.getMemoryInfo(amMemInfo)
 
-        memInfoContent.lineSequence().forEach { line ->
-            val parts = line.split(":")
-            if (parts.size >= 2) {
-                val key = parts[0].trim()
-                val value = parts[1].trim().split("\\s+".toRegex()).firstOrNull()?.toLongOrNull() ?: 0L
-                when (key) {
-                    "MemTotal" -> totalKb = value
-                    "MemAvailable" -> availKb = value
-                    "MemFree" -> freeKb = value
-                    "SwapTotal" -> swapTotalKb = value
-                    "SwapFree" -> swapFreeKb = value
-                }
-            }
-        }
-
-        val effectiveAvailKb = if (availKb > 0) availKb else freeKb
-        val usedKb = (totalKb - effectiveAvailKb).coerceAtLeast(0L)
-        val usedPercent = if (totalKb > 0) {
-            (usedKb.toFloat() / totalKb.toFloat()) * 100f
+        val totalMb = amMemInfo.totalMem / (1024 * 1024)
+        val availMb = amMemInfo.availMem / (1024 * 1024)
+        val usedMb = (totalMb - availMb).coerceAtLeast(0L)
+        val usedPercent = if (totalMb > 0) {
+            ((usedMb.toFloat() / totalMb.toFloat()) * 100f).coerceIn(0f, 100f)
         } else {
             0f
         }
 
+        // 2. 轻量补充 Swap/ZRAM（从 /proc/meminfo 快速提取）
+        var swapFreeMb = 0L
+        if (cachedSwapTotalMb == 0L) {
+            val memInfoContent = RootShell.readFile("/proc/meminfo")
+            memInfoContent?.lineSequence()?.forEach { line ->
+                if (line.startsWith("SwapTotal:")) {
+                    cachedSwapTotalMb = extractKb(line) / 1024
+                } else if (line.startsWith("SwapFree:")) {
+                    swapFreeMb = extractKb(line) / 1024
+                }
+            }
+        }
+
         MemoryInfo(
-            totalMb = totalKb / 1024,
-            availMb = effectiveAvailKb / 1024,
-            usedMb = usedKb / 1024,
-            usedPercent = usedPercent.coerceIn(0f, 100f),
-            swapTotalMb = swapTotalKb / 1024,
-            swapFreeMb = swapFreeKb / 1024
+            totalMb = totalMb,
+            availMb = availMb,
+            usedMb = usedMb,
+            usedPercent = usedPercent,
+            swapTotalMb = cachedSwapTotalMb,
+            swapFreeMb = swapFreeMb
         )
+    }
+
+    private fun extractKb(line: String): Long {
+        return line.substringAfter(":").trim().substringBefore(" ").toLongOrNull() ?: 0L
     }
 
     suspend fun sampleStorageInfo(): StorageInfo = withContext(Dispatchers.IO) {
