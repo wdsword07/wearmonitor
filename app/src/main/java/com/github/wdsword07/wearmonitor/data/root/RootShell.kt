@@ -80,7 +80,7 @@ object RootShell {
 
         // 尝试 Root 读取
         if (isRootAvailable()) {
-            val result = readViaRootSession(path)
+            val result = execCommand("cat $path")
             if (result != null) {
                 return@withContext if (singleLineOnly) result.lineSequence().firstOrNull()?.trim() else result
             }
@@ -92,30 +92,40 @@ object RootShell {
         null
     }
 
-    private suspend fun readViaRootSession(path: String): String? = mutex.withLock {
-        try {
-            ensureSuSession()
-            val writer = suWriter ?: return null
-            val reader = suReader ?: return null
+    /**
+     * 在持久化 su 会话中执行指定 Shell 命令并返回结果
+     */
+    suspend fun execCommand(command: String): String? = mutex.withLock {
+        if (!testRootCached()) return null
+        withContext(Dispatchers.IO) {
+            try {
+                ensureSuSession()
+                val writer = suWriter ?: return@withContext null
+                val reader = suReader ?: return@withContext null
 
-            val token = "__END_${System.nanoTime()}__"
-            writer.write("cat $path 2>/dev/null; echo $token\n")
-            writer.flush()
+                val token = "__END_${System.nanoTime()}__"
+                writer.write("$command 2>/dev/null; echo $token\n")
+                writer.flush()
 
-            val sb = java.lang.StringBuilder()
-            while (true) {
-                val line = reader.readLine() ?: break
-                if (line == token) break
-                if (sb.isNotEmpty()) sb.append("\n")
-                sb.append(line)
+                val sb = java.lang.StringBuilder()
+                while (true) {
+                    val line = reader.readLine() ?: break
+                    if (line == token) break
+                    if (sb.isNotEmpty()) sb.append("\n")
+                    sb.append(line)
+                }
+                val text = sb.toString().trim()
+                if (text.isNotEmpty()) text else null
+            } catch (e: Exception) {
+                Log.w(TAG, "Persistent su exec failed for $command: ${e.message}")
+                closeSuSession()
+                null
             }
-            val text = sb.toString().trim()
-            if (text.isNotEmpty()) text else null
-        } catch (e: Exception) {
-            Log.w(TAG, "Persistent su read failed for $path: ${e.message}")
-            closeSuSession()
-            null
         }
+    }
+
+    private fun testRootCached(): Boolean {
+        return rootAvailable ?: testRoot().also { rootAvailable = it }
     }
 
     private fun ensureSuSession() {

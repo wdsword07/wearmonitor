@@ -73,6 +73,219 @@ fun MetricDetailScreen(
 
             // 根据类型展示对应的趋势图和详细卡片
             when (type) {
+                MetricDetailType.SYSTEM_INFO -> {
+                    val device = latest.deviceInfo
+
+                    item(key = "sys_device_card") {
+                        Card(
+                            onClick = {},
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
+                                Text(
+                                    text = "设备与系统固件",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("设备型号", style = MaterialTheme.typography.bodySmall)
+                                    Text("${device.manufacturer} ${device.model}", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("内部代号", style = MaterialTheme.typography.bodySmall)
+                                    Text(device.deviceCodename, style = MaterialTheme.typography.bodySmall)
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Android 版本", style = MaterialTheme.typography.bodySmall)
+                                    Text("Android ${device.androidVersion} (API ${device.apiLevel})", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                                }
+                                if (device.buildDisplay.isNotBlank()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("固件版本号", style = MaterialTheme.typography.bodySmall)
+                                        Text(device.buildDisplay.take(16), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("安全补丁", style = MaterialTheme.typography.bodySmall)
+                                    Text(device.securityPatch, style = MaterialTheme.typography.bodySmall)
+                                }
+                                if (device.uptimeFormatted.isNotBlank()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("运行时间", style = MaterialTheme.typography.bodySmall)
+                                        Text(device.uptimeFormatted, style = MaterialTheme.typography.bodySmall, color = Color(0xFF81C784))
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    item(key = "sys_root_card") {
+                        Card(
+                            onClick = {},
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
+                                Text(
+                                    text = "特权与安全环境 (Root)",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = if (latest.isRootGranted) Color(0xFF4CAF50) else Color(0xFFFF9800)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Root 状态", style = MaterialTheme.typography.bodySmall)
+                                    Text(
+                                        text = device.rootProvider,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (latest.isRootGranted) Color(0xFF4CAF50) else Color(0xFFFF9800)
+                                    )
+                                }
+                                if (device.suPath.isNotBlank()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("SU 路径", style = MaterialTheme.typography.bodySmall)
+                                        Text(device.suPath, style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("SELinux 模式", style = MaterialTheme.typography.bodySmall)
+                                    Text(device.selinuxMode, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Bootloader 状态", style = MaterialTheme.typography.bodySmall)
+                                    Text(
+                                        text = device.bootloaderState,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (device.bootloaderState.contains("解锁", ignoreCase = true) || device.bootloaderState.contains("Unlocked", ignoreCase = true)) Color(0xFFFFB74D) else MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                                if (device.kernelVersion.isNotBlank()) {
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "内核版本:",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.outline
+                                    )
+                                    Text(
+                                        text = device.kernelVersion,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    item(key = "sys_screen_card") {
+                        Card(
+                            onClick = {},
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
+                                Text(
+                                    text = "屏幕与显示规格",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("物理分辨率", style = MaterialTheme.typography.bodySmall)
+                                    Text(device.screenResolution, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("表盘形态", style = MaterialTheme.typography.bodySmall)
+                                    Text(if (device.isRoundScreen) "圆形表盘 (Round)" else "矩形表盘 (Square)", style = MaterialTheme.typography.bodySmall)
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("像素密度 (DPI)", style = MaterialTheme.typography.bodySmall)
+                                    Text("${device.screenDpi} DPI", style = MaterialTheme.typography.bodySmall)
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("屏幕刷新率", style = MaterialTheme.typography.bodySmall)
+                                    Text("${device.refreshRate.toInt()} Hz", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                        }
+                    }
+
+                    item(key = "sys_radio_card") {
+                        Card(
+                            onClick = {},
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
+                                Text(
+                                    text = "基带与网络固件",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("基带版本", style = MaterialTheme.typography.bodySmall)
+                                    Text(device.radioVersion.take(20), style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp))
+                                }
+                            }
+                        }
+                    }
+                }
+
                 MetricDetailType.CPU -> {
                     item(key = "cpu_chart") {
                         val points = history.map { it.cpu.overallUsagePercent }
@@ -96,6 +309,66 @@ fun MetricDetailScreen(
                                     unit = "%",
                                     lineColor = MaterialTheme.colorScheme.primary
                                 )
+                            }
+                        }
+                    }
+
+                    item(key = "soc_hardware_details") {
+                        Card(
+                            onClick = {},
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer
+                            )
+                        ) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(4.dp)) {
+                                Text(
+                                    text = "SoC 芯片硬件规格",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                if (latest.cpu.socPlatform.isNotBlank()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("SoC 平台 / 芯片", style = MaterialTheme.typography.bodySmall)
+                                        Text(latest.cpu.socPlatform, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                                if (latest.cpu.socHardware.isNotBlank()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("主板硬件代号", style = MaterialTheme.typography.bodySmall)
+                                        Text(latest.cpu.socHardware, style = MaterialTheme.typography.bodySmall)
+                                    }
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("指令集架构", style = MaterialTheme.typography.bodySmall)
+                                    Text(latest.cpu.cpuArch, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                                }
+                                if (latest.cpu.supportedAbis.isNotBlank()) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("支持 ABI", style = MaterialTheme.typography.bodySmall)
+                                        Text(latest.cpu.supportedAbis, style = MaterialTheme.typography.bodySmall)
+                                    }
+                                }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("物理核心总数", style = MaterialTheme.typography.bodySmall)
+                                    Text("${latest.cpu.cores.size} 核物理核心", style = MaterialTheme.typography.bodySmall)
+                                }
                             }
                         }
                     }

@@ -17,6 +17,7 @@ class SystemMonitorRepository(context: Context) {
     private val thermalMonitor = ThermalMonitor(appContext)
     private val batteryMonitor = BatteryMonitor(appContext)
     private val memoryStorageMonitor = MemoryStorageMonitor(appContext)
+    private val systemInfoMonitor = SystemInfoMonitor(appContext)
 
     suspend fun getSnapshot(): SystemSnapshot = coroutineScope {
         val rootDeferred = async { RootShell.isRootAvailable() }
@@ -26,14 +27,18 @@ class SystemMonitorRepository(context: Context) {
         val memoryDeferred = async { memoryStorageMonitor.sampleMemoryInfo() }
         val storageDeferred = async { memoryStorageMonitor.sampleStorageInfo() }
 
+        val isRoot = rootDeferred.await()
+        val deviceInfo = systemInfoMonitor.getDeviceInfo(isRoot)
+
         SystemSnapshot(
             timestamp = System.currentTimeMillis(),
-            isRootGranted = rootDeferred.await(),
+            isRootGranted = isRoot,
             cpu = cpuDeferred.await(),
             thermal = thermalDeferred.await(),
             battery = batteryDeferred.await(),
             memory = memoryDeferred.await(),
-            storage = storageDeferred.await()
+            storage = storageDeferred.await(),
+            deviceInfo = deviceInfo
         )
     }
 

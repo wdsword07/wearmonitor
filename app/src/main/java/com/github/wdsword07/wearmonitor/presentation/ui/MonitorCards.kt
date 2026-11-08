@@ -33,10 +33,11 @@ import java.util.Locale
 @Composable
 fun StatusHeaderCard(
     isRootGranted: Boolean,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
-        onClick = {},
+        onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = if (isRootGranted) {
@@ -67,12 +68,22 @@ fun StatusHeaderCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
-            Text(
-                text = if (isRootGranted) "ROOTED" else "NO ROOT",
-                style = MaterialTheme.typography.labelSmall,
-                color = if (isRootGranted) Color(0xFF4CAF50) else Color(0xFFFF9800),
-                fontWeight = FontWeight.SemiBold
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = if (isRootGranted) "ROOTED" else "NO ROOT",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isRootGranted) Color(0xFF4CAF50) else Color(0xFFFF9800),
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = " ›",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.outline
+                )
+            }
         }
     }
 }

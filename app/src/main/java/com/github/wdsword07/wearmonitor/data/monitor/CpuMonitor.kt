@@ -1,5 +1,6 @@
 package com.github.wdsword07.wearmonitor.data.monitor
 
+import android.os.Build
 import com.github.wdsword07.wearmonitor.data.model.CpuCoreInfo
 import com.github.wdsword07.wearmonitor.data.model.CpuInfo
 import com.github.wdsword07.wearmonitor.data.root.RootShell
@@ -16,6 +17,14 @@ class CpuMonitor {
     private var detectedCoreIndices: List<Int>? = null
     @Volatile
     private var cachedGovernor: String = ""
+    @Volatile
+    private var cachedSocPlatform: String = ""
+    @Volatile
+    private var cachedSocHardware: String = ""
+    @Volatile
+    private var cachedCpuArch: String = ""
+    @Volatile
+    private var cachedSupportedAbis: String = ""
 
     suspend fun sampleCpuInfo(): CpuInfo = withContext(Dispatchers.IO) {
         val usage = calculateOverallUsage()
@@ -23,10 +32,22 @@ class CpuMonitor {
         if (cachedGovernor.isEmpty()) {
             cachedGovernor = readGovernor()
         }
+        if (cachedSocPlatform.isEmpty()) {
+            val board = Build.BOARD ?: ""
+            val hardware = Build.HARDWARE ?: ""
+            cachedSocHardware = hardware
+            cachedSocPlatform = if (board.isNotBlank()) board else hardware
+            cachedCpuArch = System.getProperty("os.arch") ?: "arm"
+            cachedSupportedAbis = Build.SUPPORTED_ABIS?.joinToString(", ") ?: ""
+        }
         CpuInfo(
             overallUsagePercent = usage,
             cores = cores,
-            governor = cachedGovernor
+            governor = cachedGovernor,
+            socPlatform = cachedSocPlatform,
+            socHardware = cachedSocHardware,
+            cpuArch = cachedCpuArch,
+            supportedAbis = cachedSupportedAbis
         )
     }
 

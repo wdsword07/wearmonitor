@@ -125,6 +125,7 @@ fun WearmonitorApp(
                             item(key = "header") {
                                 StatusHeaderCard(
                                     isRootGranted = snapshot.isRootGranted,
+                                    onClick = { onOpenDetail(MetricDetailType.SYSTEM_INFO) },
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
@@ -196,7 +197,11 @@ fun WearmonitorPreview() {
                 CpuCoreInfo(2, 800, isOnline = true),
                 CpuCoreInfo(3, 800, isOnline = true)
             ),
-            governor = "schedutil"
+            governor = "schedutil",
+            socPlatform = "Snapdragon W5+ Gen 1",
+            socHardware = "sw5100",
+            cpuArch = "aarch64",
+            supportedAbis = "arm64-v8a, armeabi-v7a"
         ),
         thermal = ThermalInfo(
             batteryTempC = 36.2f,

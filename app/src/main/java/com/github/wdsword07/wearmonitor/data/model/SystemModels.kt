@@ -11,7 +11,11 @@ data class CpuCoreInfo(
 data class CpuInfo(
     val overallUsagePercent: Float, // 0..100
     val cores: List<CpuCoreInfo>,
-    val governor: String = ""
+    val governor: String = "",
+    val socPlatform: String = "",
+    val socHardware: String = "",
+    val cpuArch: String = "",
+    val supportedAbis: String = ""
 )
 
 data class ThermalZone(
@@ -64,7 +68,29 @@ data class StorageInfo(
     val usedGb: Float get() = usedBytes / (1024f * 1024f * 1024f)
 }
 
+data class SystemDeviceInfo(
+    val model: String = "",
+    val deviceCodename: String = "",
+    val manufacturer: String = "",
+    val androidVersion: String = "",
+    val apiLevel: Int = 0,
+    val buildDisplay: String = "",
+    val securityPatch: String = "",
+    val uptimeFormatted: String = "",
+    val kernelVersion: String = "",
+    val rootProvider: String = "",
+    val suPath: String = "",
+    val selinuxMode: String = "",
+    val bootloaderState: String = "",
+    val screenResolution: String = "",
+    val isRoundScreen: Boolean = true,
+    val screenDpi: Int = 0,
+    val refreshRate: Float = 60f,
+    val radioVersion: String = ""
+)
+
 enum class MetricDetailType(val title: String) {
+    SYSTEM_INFO("系统环境"),
     CPU("CPU 趋势"),
     THERMAL("温度趋势"),
     BATTERY("供电趋势"),
@@ -78,5 +104,6 @@ data class SystemSnapshot(
     val thermal: ThermalInfo = ThermalInfo(0f, null),
     val battery: BatteryInfo = BatteryInfo(0, false, null, null, null),
     val memory: MemoryInfo = MemoryInfo(0, 0, 0, 0f),
-    val storage: StorageInfo = StorageInfo(0, 0, 0, 0f)
+    val storage: StorageInfo = StorageInfo(0, 0, 0, 0f),
+    val deviceInfo: SystemDeviceInfo = SystemDeviceInfo()
 )

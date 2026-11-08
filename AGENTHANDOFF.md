@@ -23,10 +23,11 @@ wearmonitor/
 │   │   │   ├── root/
 │   │   │   │   └── RootShell.kt               # 单例持久化 Root 管道桥接器、智能降级与防卡顿黑名单缓存
 │   │   │   └── monitor/
-│   │   │       ├── CpuMonitor.kt              # CPU 全局使用率 (/proc/stat & /proc/loadavg 兜底)、各核频率、调速器
+│   │   │       ├── CpuMonitor.kt              # CPU 全局使用率 (/proc/stat & /proc/loadavg 兜底)、各核频率、调速器、SoC硬件信息
 │   │   │       ├── ThermalMonitor.kt          # 芯片 SoC 核心温区探测缓存、电池温度监控
 │   │   │       ├── BatteryMonitor.kt          # 电池电量、实时充放电电流 (mA)、端电压 (mV)、即时功率 (W)
 │   │   │       ├── MemoryStorageMonitor.kt    # ActivityManager 原生 JNI 内存统计、ZRAM 提取、StatFs 存储空间
+│   │   │       ├── SystemInfoMonitor.kt       # 深入 Root 特权检测 (Magisk/KSU/APatch)、SELinux、Bootloader、屏幕与固件信息
 │   │   │       └── SystemMonitorRepository.kt # 响应式数据源仓库 (单次快照 + 前台按需轮询 Flow)
 │   │   ├── presentation/
 │   │   │   ├── MainActivity.kt                # 主入口 Activity、Crossfade 页面导航、滑动防抖监听、BackHandler
@@ -36,7 +37,7 @@ wearmonitor/
 │   │   │   └── ui/
 │   │   │       ├── MonitorCards.kt            # 主面板卡片 (StatusHeaderCard, CpuCard, ThermalCard, BatteryCard, MemoryCard, StorageCard)
 │   │   │       ├── MetricTrendChart.kt        # 动态缩放、30/60s标尺、Max/Min/Avg 标注的轻量 Canvas 渐变曲线图
-│   │   │       └── MetricDetailScreen.kt      # 各指标 1 分钟历史曲线二级深度详情页面 (原生 SwipeToDismiss 侧滑返回)
+│   │   │       └── MetricDetailScreen.kt      # 各指标 1 分钟历史曲线与系统技术信息二级详情页面 (原生 SwipeToDismiss 侧滑返回)
 │   │   └── tile/
 │   │       └── MainTileService.kt             # ProtoLayout Material 3 规范磁贴实现 (CPU+RAM+电量温度)
 │   ├── res/                                   # 自适应矢量图标、启动 Splash 图标、各密度 WebP 资源
