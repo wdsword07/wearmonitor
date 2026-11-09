@@ -1,7 +1,16 @@
 # WearMonitor 项目交接文档 (Agent Handoff)
 
-> 最近更新：`c43d418`（修复 su 会话 token 换行导致的“全量指标归零”重大 bug）
+> 最近更新：`eb828bb`（进程管理模块 / 温度双曲线 / CPU 真实运行频率）
 > 目的：切换到新会话/新窗口时，可仅凭本文档恢复完整上下文。
+
+---
+
+## 0. 协作与提交约定（强制）
+* **先提交，再动手**：每次开始新的编写/修改前，工作区必须干净；若存在未提交变更，先 `git commit` 再继续。
+* **完成即提交**：每批修改完成并通过 `assembleDebug` / `assembleRelease` 后立即提交，禁止把无关改动混进同一个 commit。
+* **提交信息**：沿用 `type(scope): summary` 风格（如 `feat(process): ...`、`fix(cpu,thermal): ...`）。
+* **文档同步**：任何功能或架构变化，必须同步更新本文件（`AGENTHANDOFF.md`）。
+* **不提交 IDE 产物**：`.idea/inspectionProfiles/` 等本机 IDE 生成文件不纳入版本库（除非用户明确要求）。
 
 ---
 
@@ -150,6 +159,9 @@ wearmonitor/
 ## 4. Git 提交记录一览
 
 ```
+eb828bb fix(cpu,thermal): show SoC temp curve and compute real CPU freq from time_in_state residency
+0a8447d feat(process): add process manager with memory/CPU sorting, safe kill, and app info
+7531ffc docs: refresh AGENTHANDOFF with sysinfo page, chart/theme changes, and root session pitfalls
 c43d418 fix(root): resolve total data blackout caused by su session token/newline hang
 53c5a01 feat(sysinfo): add title click system technical info and move SoC details to CPU screen
 e036140 feat(ui): add 30/60s axes and dynamic scale to charts, adopt system theme, and enable swipe-to-dismiss
