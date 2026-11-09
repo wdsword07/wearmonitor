@@ -1,6 +1,8 @@
 package com.github.wdsword07.wearmonitor.data.monitor
 
 import android.content.Context
+import com.github.wdsword07.wearmonitor.data.model.ProcessEntry
+import com.github.wdsword07.wearmonitor.data.model.ProcessSummary
 import com.github.wdsword07.wearmonitor.data.model.SystemSnapshot
 import com.github.wdsword07.wearmonitor.data.root.RootShell
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +20,7 @@ class SystemMonitorRepository(context: Context) {
     private val batteryMonitor = BatteryMonitor(appContext)
     private val memoryStorageMonitor = MemoryStorageMonitor(appContext)
     private val systemInfoMonitor = SystemInfoMonitor(appContext)
+    private val processMonitor = ProcessMonitor(appContext)
 
     suspend fun getSnapshot(): SystemSnapshot = coroutineScope {
         val rootDeferred = async { RootShell.isRootAvailable() }
@@ -48,6 +51,16 @@ class SystemMonitorRepository(context: Context) {
             delay(pollIntervalMs)
         }
     }.flowOn(Dispatchers.IO)
+
+    /** 进程总数摘要：默认 10s 刷新，供主面板入口卡片使用 */
+    suspend fun getProcessSummary(forceRefresh: Boolean = false): ProcessSummary =
+        processMonitor.getSummary(forceRefresh = forceRefresh)
+
+    /** 完整进程列表：默认 2.5s 刷新，供进程管理二级页使用 */
+    suspend fun getProcesses(forceRefresh: Boolean = false): List<ProcessEntry> =
+        processMonitor.getProcesses(forceRefresh = forceRefresh)
+
+    suspend fun killProcess(entry: ProcessEntry): Boolean = processMonitor.killProcess(entry)
 
     companion object {
         @Volatile

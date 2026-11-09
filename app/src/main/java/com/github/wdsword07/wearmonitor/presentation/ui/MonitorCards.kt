@@ -26,6 +26,7 @@ import com.github.wdsword07.wearmonitor.R
 import com.github.wdsword07.wearmonitor.data.model.BatteryInfo
 import com.github.wdsword07.wearmonitor.data.model.CpuInfo
 import com.github.wdsword07.wearmonitor.data.model.MemoryInfo
+import com.github.wdsword07.wearmonitor.data.model.ProcessSummary
 import com.github.wdsword07.wearmonitor.data.model.StorageInfo
 import com.github.wdsword07.wearmonitor.data.model.ThermalInfo
 import java.util.Locale
@@ -481,6 +482,76 @@ fun StorageCard(
                 progress = { (storage.usedPercent / 100f).coerceIn(0.02f, 1f) },
                 modifier = Modifier.fillMaxWidth()
             )
+        }
+    }
+}
+
+@Composable
+fun ProcessCard(
+    summary: ProcessSummary,
+    isRootGranted: Boolean,
+    onClick: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        )
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "进程管理",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "  ›",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+                Text(
+                    text = if (summary.totalCount > 0) "${summary.totalCount}" else "—",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = when {
+                        summary.totalCount > 0 -> "应用 ${summary.appCount} · 系统 ${summary.systemCount}"
+                        !isRootGranted -> "需要 Root 权限"
+                        else -> "读取中…"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (summary.totalMemoryMb > 0f) {
+                    Text(
+                        text = "RSS " + String.format(
+                            Locale.US,
+                            if (summary.totalMemoryMb >= 1024f) "%.2f GB" else "%.0f MB",
+                            if (summary.totalMemoryMb >= 1024f) summary.totalMemoryMb / 1024f else summary.totalMemoryMb
+                        ),
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+            }
         }
     }
 }

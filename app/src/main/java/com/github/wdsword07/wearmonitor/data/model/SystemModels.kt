@@ -94,8 +94,36 @@ enum class MetricDetailType(val title: String) {
     CPU("CPU 趋势"),
     THERMAL("温度趋势"),
     BATTERY("供电趋势"),
-    MEMORY("RAM & Swap")
+    MEMORY("RAM & Swap"),
+    PROCESSES("进程管理")
 }
+
+enum class ProcessSort { MEMORY, CPU }
+
+data class ProcessEntry(
+    val pid: Int,
+    val uid: Int,
+    val processName: String,
+    val packageName: String? = null,
+    val versionName: String = "",
+    val memoryMb: Float = 0f,
+    val cpuPercent: Float = 0f,
+    val isSystem: Boolean = false,
+    val isSelf: Boolean = false
+) {
+    /** 展示名：优先包名，系统进程退回进程名 */
+    val displayName: String get() = packageName ?: processName
+
+    /** 仅可结束的普通应用进程；系统进程与本应用自身不可结束 */
+    val canKill: Boolean get() = !isSystem && !isSelf && !packageName.isNullOrBlank()
+}
+
+data class ProcessSummary(
+    val totalCount: Int = 0,
+    val appCount: Int = 0,
+    val systemCount: Int = 0,
+    val totalMemoryMb: Float = 0f
+)
 
 data class SystemSnapshot(
     val timestamp: Long = System.currentTimeMillis(),

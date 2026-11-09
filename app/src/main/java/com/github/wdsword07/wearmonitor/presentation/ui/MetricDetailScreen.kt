@@ -729,6 +729,9 @@ fun MetricDetailScreen(
                         }
                     }
                 }
+
+                // 进程管理使用独立的 ProcessListScreen，不会进入本页面
+                MetricDetailType.PROCESSES -> Unit
             }
         }
     }

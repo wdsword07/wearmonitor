@@ -31,6 +31,9 @@ import com.github.wdsword07.wearmonitor.data.model.CpuCoreInfo
 import com.github.wdsword07.wearmonitor.data.model.CpuInfo
 import com.github.wdsword07.wearmonitor.data.model.MemoryInfo
 import com.github.wdsword07.wearmonitor.data.model.MetricDetailType
+import com.github.wdsword07.wearmonitor.data.model.ProcessEntry
+import com.github.wdsword07.wearmonitor.data.model.ProcessSort
+import com.github.wdsword07.wearmonitor.data.model.ProcessSummary
 import com.github.wdsword07.wearmonitor.data.model.StorageInfo
 import com.github.wdsword07.wearmonitor.data.model.SystemSnapshot
 import com.github.wdsword07.wearmonitor.data.model.ThermalInfo
@@ -39,6 +42,8 @@ import com.github.wdsword07.wearmonitor.presentation.ui.BatteryCard
 import com.github.wdsword07.wearmonitor.presentation.ui.CpuCard
 import com.github.wdsword07.wearmonitor.presentation.ui.MemoryCard
 import com.github.wdsword07.wearmonitor.presentation.ui.MetricDetailScreen
+import com.github.wdsword07.wearmonitor.presentation.ui.ProcessCard
+import com.github.wdsword07.wearmonitor.presentation.ui.ProcessListScreen
 import com.github.wdsword07.wearmonitor.presentation.ui.StatusHeaderCard
 import com.github.wdsword07.wearmonitor.presentation.ui.StorageCard
 import com.github.wdsword07.wearmonitor.presentation.ui.ThermalCard
@@ -52,6 +57,9 @@ class MainActivity : ComponentActivity() {
             val snapshot by viewModel.snapshotState.collectAsStateWithLifecycle()
             val history by viewModel.history.collectAsStateWithLifecycle()
             val currentDetailType by viewModel.currentDetailType.collectAsStateWithLifecycle()
+            val processSummary by viewModel.processSummary.collectAsStateWithLifecycle()
+            val processes by viewModel.processes.collectAsStateWithLifecycle()
+            val processSort by viewModel.processSort.collectAsStateWithLifecycle()
 
             // 拦截系统返回键，如果在二级页面则返回主面板
             BackHandler(enabled = currentDetailType != null) {
@@ -62,8 +70,13 @@ class MainActivity : ComponentActivity() {
                 snapshot = snapshot,
                 history = history,
                 detailType = currentDetailType,
+                processSummary = processSummary,
+                processes = processes,
+                processSort = processSort,
                 onOpenDetail = { type -> viewModel.openDetail(type) },
                 onBack = { viewModel.closeDetail() },
+                onToggleProcessSort = { viewModel.toggleProcessSort() },
+                onKillProcess = { entry -> viewModel.killProcess(entry) },
                 onScrollInProgressChanged = { isScrolling ->
                     viewModel.setScrolling(isScrolling)
                 }
@@ -77,8 +90,13 @@ fun WearmonitorApp(
     snapshot: SystemSnapshot,
     history: List<SystemSnapshot> = emptyList(),
     detailType: MetricDetailType? = null,
+    processSummary: ProcessSummary = ProcessSummary(),
+    processes: List<ProcessEntry> = emptyList(),
+    processSort: ProcessSort = ProcessSort.MEMORY,
     onOpenDetail: (MetricDetailType) -> Unit = {},
     onBack: () -> Unit = {},
+    onToggleProcessSort: () -> Unit = {},
+    onKillProcess: (ProcessEntry) -> Unit = {},
     onScrollInProgressChanged: (Boolean) -> Unit = {}
 ) {
     WearmonitorTheme {
@@ -162,6 +180,15 @@ fun WearmonitorApp(
                                 )
                             }
 
+                            item(key = "processes") {
+                                ProcessCard(
+                                    summary = processSummary,
+                                    isRootGranted = snapshot.isRootGranted,
+                                    onClick = { onOpenDetail(MetricDetailType.PROCESSES) },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+
                             item(key = "storage") {
                                 StorageCard(
                                     storage = snapshot.storage,
@@ -170,6 +197,14 @@ fun WearmonitorApp(
                             }
                         }
                     }
+                } else if (detailType == MetricDetailType.PROCESSES) {
+                    ProcessListScreen(
+                        processes = processes,
+                        sort = processSort,
+                        onToggleSort = onToggleProcessSort,
+                        onKill = onKillProcess,
+                        onScrollInProgressChanged = onScrollInProgressChanged
+                    )
                 } else {
                     MetricDetailScreen(
                         type = detailType,

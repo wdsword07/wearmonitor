@@ -10,11 +10,12 @@
 * **目标平台**：Wear OS (API 30 ~ 37)，针对已 Root 设备深度优化，同时兼容非 Root 状态下的基础系统监控。
 * **产品核心形态**：
   1. **手表端系统面板主界面**：**Wear Compose Material 3** 构建，圆形表盘平铺卡片仪表盘。
-     - 卡片顺序：`StatusHeaderCard`（标题/根状态，可点击）→ `CpuCard` → `ThermalCard` → `BatteryCard` → `MemoryCard`（RAM + Swap）→ `StorageCard`（ROM，独立拆分）。
+     - 卡片顺序：`StatusHeaderCard`（标题/根状态，可点击）→ `CpuCard` → `ThermalCard` → `BatteryCard` → `MemoryCard`（RAM + Swap）→ `ProcessCard`（进程数）→ `StorageCard`（ROM，独立拆分）。
   2. **系统环境页（SYSTEM_INFO）**：点击顶部 Title 卡片进入，展示设备固件、**深度 Root 特权信息**、屏幕规格、基带固件。
-  3. **配套 Wear OS 磁贴（Tile）**：**ProtoLayout Material 3**，侧滑即览 CPU+RAM+电量温度，点击唤醒主应用。
-  4. **各指标 1 分钟历史趋势二级页面**：CPU、温度、电池供电、RAM & Swap 均可点击进入（存储无趋势页）。
-  5. **只读安全监控原则**：无任何破坏性控制功能，专注精准、极低开销的系统状态监控。
+  3. **进程管理页（PROCESSES）**：类任务管理器，按内存 / CPU 降序展示进程（包名、版本、内存、CPU），支持手动结束进程与跳转系统应用信息页。
+  5. **配套 Wear OS 磁贴（Tile）**：**ProtoLayout Material 3**，侧滑即览 CPU+RAM+电量温度，点击唤醒主应用。
+  6. **各指标 1 分钟历史趋势二级页面**：CPU、温度、电池供电、RAM & Swap 均可点击进入（存储无趋势页）。
+  7. **安全原则**：以只读监控为主；唯一破坏性操作「结束进程」必须由用户手动触发并二次确认，且系统进程与本应用自身不可结束。
 
 ---
 
@@ -38,6 +39,8 @@ wearmonitor/
 │   │   │       ├── ThermalMonitor.kt          # SoC 温区探测缓存、电池温度（BatteryManager 优先）
 │   │   │       ├── BatteryMonitor.kt          # 电量、电流(mA)、电压(mV)、功率(W)
 │   │   │       ├── MemoryStorageMonitor.kt    # ActivityManager 原生内存、ZRAM 压缩比、StatFs 存储
+│   │   │       ├── ProcessMonitor.kt          # 单条 su 命令枚举进程；ps + /proc/<pid>/stat
+│   │   │       │                              # 差分算 CPU；包名/版本缓存；am force-stop 结束进程
 │   │   │       ├── SystemInfoMonitor.kt       # 静态系统信息：后台协程探测 + 立即返回缓存；
 │   │   │       │                              # 禁止嵌套 su；Magisk/KSU/APatch 识别
 │   │   │       └── SystemMonitorRepository.kt # 单次快照 + 前台按需轮询 Flow（2s）
@@ -48,10 +51,11 @@ wearmonitor/
 │   │   │   │   └── Theme.kt                   # MaterialTheme + dynamicColorScheme 系统动态配色
 │   │   │   └── ui/
 │   │   │       ├── MonitorCards.kt            # StatusHeaderCard(可点击) / CpuCard / ThermalCard /
-│   │   │       │                              # BatteryCard / MemoryCard / StorageCard
+│   │   │       │                              # BatteryCard / MemoryCard / ProcessCard / StorageCard
 │   │   │       ├── MetricTrendChart.kt        # 动态纵轴缩放 + Max/Min/Avg + 60s/30s/0s 横轴标尺
-│   │   │       └── MetricDetailScreen.kt      # 5 类详情：SYSTEM_INFO / CPU(含 SoC) / THERMAL /
-│   │   │                                      # BATTERY / MEMORY(RAM+Swap 双曲线 + ZRAM 明细)
+│   │   │       ├── MetricDetailScreen.kt      # 5 类详情：SYSTEM_INFO / CPU(含 SoC) / THERMAL /
+│   │   │       │                              # BATTERY / MEMORY(RAM+Swap 双曲线 + ZRAM 明细)
+│   │   │       └── ProcessListScreen.kt       # 进程管理：内存/CPU 降序、结束进程、应用信息
 │   │   └── tile/
 │   │       └── MainTileService.kt             # ProtoLayout M3 磁贴
 │   ├── res/                                   # 自适应矢量图标、Splash、各密度 WebP
@@ -115,6 +119,23 @@ wearmonitor/
   屏幕与显示（分辨率/圆屏/DPI/刷新率）、基带与网络固件。
 * **SoC 硬件规格拆到 CPU 详情页**（平台、硬件代号、指令集架构、ABI、物理核心数）。
 
+### 3.9 进程管理模块（任务管理器）
+* **入口**：主面板 `ProcessCard` 显示进程总数（应用数 / 系统数 + RSS 总量），点击进入 `PROCESSES` 详情页。
+* **数据采集（关键性能设计）**：整张进程表只用**一条** su 命令：
+  1. `ps -A -o pid,uid,rss,args` 取 pid / uid / 常驻内存 / 完整进程名（字段名必须小写，toybox 与 procps 的兼容性）；
+  2. 再用 mksh **内建 `read`** 批量读取 `/proc/<pid>/stat`（零 fork，约 300 次文件读）取 utime/stime，
+     与上次采样差分得到区间 CPU 占用（`tick / CLK_TCK / Δt`，上限 100%）。
+* **包名/版本**：按 uid 走 `PackageManager.getPackagesForUid()` + `getPackageInfo()`，结果按 `uid:进程名` 缓存。
+* **采样节流**：主面板摘要 10s、详情页 3s；两者共享 `ProcessMonitor` 缓存与 CPU 采样窗口，
+  避免摘要与详情同时刷新导致 CPU 差值窗口过短（此时沿用上次占用率，防整屏闪 0）。
+* **滚动保护**：详情页复用 `isScrollingState` 静默策略；`DisposableEffect` 在离开页面时强制复位，
+  防止主面板数据流被永久静默。
+* **安全边界**：
+  * 结束进程使用 `am force-stop`（系统级语义），**不用 `kill -9`**（绕过 AMS，可能损坏应用数据/拖垮共享进程）；
+  * 仅 UID 10000~19999 的应用进程可结束；系统进程与本应用自身禁杀；
+  * 包名来自 `/proc` cmdline，拼入 root 命令前必须通过 `^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)+$` 校验，**杜绝命令注入**；
+  * `am` 显式 `</dev/null`，遵守持久化 su 会话“禁止抢占 stdin”的约束；命令追加 `echo` 标记用于判定成功（无输出命令会返回 null）。
+
 ---
 
 ## 4. Git 提交记录一览
@@ -177,7 +198,9 @@ adb shell uiautomator dump /sdcard/wd.xml >/dev/null && adb shell cat /sdcard/wd
 * RAM/Swap：已用/总量、百分比
 * 存储：已用/总量 GB
 * 点击 Title → 系统环境页：Root 方案、su 路径、SELinux、Bootloader、内核版本
-* 日志中**不应出现** `su exec timeout`
+* 主面板进程卡片：进程数非 0、应用/系统数量、RSS；点击进入进程列表
+* 进程列表：包名/版本/内存/CPU 有值，排序切换生效；点卡片 → 结束进程（二次确认）/ 应用信息
+* 日志中**不应出现** `su exec timeout`；`WearMonitor_Process` 不应出现 `ps output not parsable`
 
 ### 5.4 Root 授权（易踩坑）
 ```bash
