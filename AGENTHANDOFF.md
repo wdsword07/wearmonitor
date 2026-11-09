@@ -35,7 +35,7 @@ wearmonitor/
 │   │   │   │                                  # token 前置换行、独立线程硬超时；sysfs 失败黑名单
 │   │   │   └── monitor/
 │   │   │       ├── CpuMonitor.kt              # 全局使用率(/proc/stat + /proc/loadavg 兜底)、
-│   │   │       │                              # 各核频率/调速器、SoC 平台/ABI/架构
+│   │   │       │                              # 各核实际频率(驻留加权)/调速器、SoC 平台/ABI/架构
 │   │   │       ├── ThermalMonitor.kt          # SoC 温区探测缓存、电池温度（BatteryManager 优先）
 │   │   │       ├── BatteryMonitor.kt          # 电量、电流(mA)、电压(mV)、功率(W)
 │   │   │       ├── MemoryStorageMonitor.kt    # ActivityManager 原生内存、ZRAM 压缩比、StatFs 存储
@@ -135,6 +135,15 @@ wearmonitor/
   * 仅 UID 10000~19999 的应用进程可结束；系统进程与本应用自身禁杀；
   * 包名来自 `/proc` cmdline，拼入 root 命令前必须通过 `^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)+$` 校验，**杜绝命令注入**；
   * `am` 显式 `</dev/null`，遵守持久化 su 会话“禁止抢占 stdin”的约束；命令追加 `echo` 标记用于判定成功（无输出命令会返回 null）。
+
+### 3.10 温度双曲线 & CPU 实际运行频率
+* **温度详情页**：同一张卡片内并列绘制「电池温度」与「SoC 芯片温度」两条曲线（`MetricTrendChart` 各一条，橙色 / 红色）；设备无 SoC 温区时自动隐藏第二条。
+* **CPU 频率改为真实运行频率**：原实现优先读 `scaling_cur_freq`，它在部分平台只反映 governor 的“请求值”，会长期固定在 policy 上限（表现为恒为 1708MHz）。
+  现改为优先使用 `cpufreq/stats/time_in_state` 的**两次采样差分 + 驻留时间加权**：
+  1. 读取顺序：`time_in_state` → `cpuinfo_cur_freq`（硬件瞬时）→ `scaling_cur_freq`（最后兜底）；
+  2. `time_in_state` 兼容三种节点位置：`cpuN/cpufreq/stats/`、`cpufreq/policyN/stats/`、`cpufreq/policy0/stats/`；
+    普通 IO 不可读时，合并为**一条** root 命令批量 `cat`（避免逐核 fork）；
+  3. 首次采样无基准，自动退回瞬时值；详情页显示为 `当前 / 上限 MHz` 并注明口径。
 
 ---
 

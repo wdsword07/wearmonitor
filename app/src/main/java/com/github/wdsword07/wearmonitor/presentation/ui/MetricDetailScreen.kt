@@ -398,7 +398,11 @@ fun MetricDetailScreen(
                                             style = MaterialTheme.typography.bodySmall
                                         )
                                         Text(
-                                            text = if (core.isOnline) "${core.curFreqMhz} MHz" else "Offline",
+                                            text = when {
+                                                !core.isOnline -> "Offline"
+                                                core.maxFreqMhz > 0 -> "${core.curFreqMhz} / ${core.maxFreqMhz} MHz"
+                                                else -> "${core.curFreqMhz} MHz"
+                                            },
                                             style = MaterialTheme.typography.bodySmall,
                                             fontWeight = FontWeight.SemiBold,
                                             color = if (core.isOnline) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline
@@ -414,6 +418,13 @@ fun MetricDetailScreen(
                                         color = MaterialTheme.colorScheme.outline
                                     )
                                 }
+
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "频率为采样区间内按驻留时间加权的实际运行频率（非 governor 请求值）。",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                                    color = MaterialTheme.colorScheme.outline
+                                )
                             }
                         }
                     }
@@ -421,7 +432,8 @@ fun MetricDetailScreen(
 
                 MetricDetailType.THERMAL -> {
                     item(key = "thermal_chart") {
-                        val points = history.map { it.thermal.batteryTempC }
+                        val batteryPoints = history.map { it.thermal.batteryTempC }
+                        val socPoints = history.mapNotNull { it.thermal.socTempC }
                         Card(
                             onClick = {},
                             modifier = Modifier.fillMaxWidth(),
@@ -435,14 +447,14 @@ fun MetricDetailScreen(
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(
-                                        text = String.format(Locale.US, "电池: %.1f °C", latest.thermal.batteryTempC),
+                                        text = String.format(Locale.US, "电池 %.1f °C", latest.thermal.batteryTempC),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFFFFB74D)
                                     )
                                     latest.thermal.socTempC?.let { soc ->
                                         Text(
-                                            text = String.format(Locale.US, "SoC: %.1f °C", soc),
+                                            text = String.format(Locale.US, "SoC %.1f °C", soc),
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = Color(0xFFFF5252)
@@ -450,11 +462,34 @@ fun MetricDetailScreen(
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
+
+                                Text(
+                                    text = "电池温度曲线",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFFFFB74D)
+                                )
                                 MetricTrendChart(
-                                    points = points,
+                                    points = batteryPoints,
                                     unit = "°C",
                                     lineColor = Color(0xFFFFB74D)
                                 )
+
+                                // SoC 温区可用时补一条独立曲线（部分设备无 SoC 温区）
+                                if (socPoints.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = "SoC 芯片温度曲线",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color(0xFFFF5252)
+                                    )
+                                    MetricTrendChart(
+                                        points = socPoints,
+                                        unit = "°C",
+                                        lineColor = Color(0xFFFF5252)
+                                    )
+                                }
                             }
                         }
                     }
